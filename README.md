@@ -1,2 +1,4 @@
-# retroSpecialization
-Backport of Java 10's generics specialization to Java 8, and 7
+# RetroSpecialization : The specialization of generics on Java 7
+
+
+
