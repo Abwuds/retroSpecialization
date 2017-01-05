@@ -73,7 +73,7 @@ class ShiftMapConstantSlots implements ShiftMap {
 
         @Override
         public String toString() {
-            return "Tuple : [ " + Arrays.toString(tuple) + "]"; // ", maxShift : " + maxShift + " tuple : " + Arrays.toString(tuple) + " ]";
+            return "Tuple : [ " + Arrays.toString(tuple) + "]";
         }
 
         String getStrRepr() {

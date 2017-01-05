@@ -75,6 +75,7 @@
 			<manifest>
 				<attribute name="Main-Class" value="${main-class}"/>
 			</manifest>
+			<zipfileset src="${lib.dir}/${asm.name}.jar" excludes="META-INF/*.SF" />
 		</jar>
 		<!-- Copying rt classes into a folder -->
 		<copy todir="${dist.dir}/rt">

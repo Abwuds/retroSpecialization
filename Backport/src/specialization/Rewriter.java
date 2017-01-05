@@ -11,6 +11,7 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -44,6 +45,9 @@ public class Rewriter {
                 return name.endsWith(".class");
             }
         });
+        if (files == null) {
+            throw new IllegalStateException("Can not find the folder : " + directory);
+        }
         for (File f : files) {
             compileClazz(f.toPath());
         }
@@ -100,15 +104,25 @@ public class Rewriter {
     }
 
     public static void main(final String[] args) throws IOException, URISyntaxException {
+        if (args.length == 0) {
+            throw new IllegalArgumentException("Please provide the directory to rewrite : -Dfolder=path");
+        }
         String dir = args[0];
         // ${folder} is the folder parameter not set when launching from the ant script.
         if (args.length < 0 || dir.isEmpty() || dir.equals("${folder}")) {
             throw new IllegalArgumentException("Please provide the directory to rewrite.");
         }
+        if (dir.contains("-Dfolder=")) {
+            String[] split = dir.split("-Dfolder=");
+            if (split.length != 2) {
+                throw new IllegalArgumentException("Please provide the directory to rewrite : -Dfolder=path");
+            }
+            dir = split[1];
+        }
         Rewriter rewriter = new Rewriter(dir);
+        System.out.println("Directory : " + dir);
         rewriter.compileDirectory();
-        rewriter.copyRTClazz(computeRTPackageAbsolutePath());
-        System.out.println("End");
+        rewriter.copyRTClazz(computeRTPackageAbsolutePathFromJar());
     }
 
     private void copyRTClazz(String dir) throws IOException {
@@ -129,6 +143,13 @@ public class Rewriter {
     }
 
     private static String computeRTPackageAbsolutePath() throws URISyntaxException {
+        URL rt = Rewriter.class.getClassLoader().getResource("rt");
+        if (rt == null) {
+            throw new IllegalStateException("Please provide the rt folder next to the Backport jar file.");
+        }
+        return rt.getPath() + "/";
+    }
+    private static String computeRTPackageAbsolutePathFromJar() throws URISyntaxException {
         String path = Rewriter.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
         String[] split = path.split("/");
         StringBuilder sb = new StringBuilder("/");

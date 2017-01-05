@@ -125,8 +125,6 @@ class BackMethodVisitor extends MethodVisitor {
             // This is made in the call of super(); for the constructor (which is the only non static
             // back class method).
             writeHeader();
-
-            System.out.println(shiftMap.dump());
         }
     }
 
