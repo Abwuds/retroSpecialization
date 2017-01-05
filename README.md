@@ -30,6 +30,7 @@ class Box<any T> {
 
     public T get() { return t; }
 }
+
 class Main {
 	public static void main(String[] args) {
 		Box<float> box = new Box<float>(3.4f);	
@@ -41,7 +42,7 @@ class Main {
 ## User Guide
 The project RetroSpecialization can be run from the [distribution files](###Modify), or directly from
 a modified code by using the `ant` [file](###Step-1-:-Valhalla-Compilation).
-### Step 1 : Valhalla Compilation (###Step-1-:-Valhalla-Compilation)
+### Step 1 : Valhalla Compilation
 In order to back port a java project containing generics instantiated with primitive 
 types, the project has to be compiled by the 
 [Valhalla project's JDK](https://wiki.openjdk.java.net/display/valhalla/Main) 
@@ -71,10 +72,9 @@ Run `ant -Dfolder={Folder to rewrite} run` to run the project.
 ### Usage
 Run `ant help` to get the ant usage.
 
-
 ## Known Limitations
-	* Still in development
-	* Does not support the inheritance
+* Still in development
+* Does not support the inheritance
 	
 ## Version History
 	
