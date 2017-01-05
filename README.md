@@ -54,6 +54,7 @@ The output of the first step should be all the java files compiled into class fi
 ### Step 2 : Download the distribution
 [Download](https://github.com/Abwuds/retroSpecialization/tree/master/Backport/build) the files present in the dist directory
 which consist in the `Backport.jar` and the `rt` folder.
+
 *The `rt` folder contains necessary files copied into the rewritten project in order
 to perform the generics specialization at runtime.*
 
