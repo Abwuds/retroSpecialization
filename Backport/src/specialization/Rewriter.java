@@ -20,7 +20,7 @@ import java.nio.file.Path;
  */
 public class Rewriter {
 
-    private static final String FOLDER_SPECIALIZATION = "compiled/";
+    private static final String FOLDER_SPECIALIZATION = "backport_result/";
     /**
      * The directory visited
      */
