@@ -53,7 +53,7 @@ public class RT {
 
     public static final MethodType TYPE_BSM_GETFIELD = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class, MethodHandles.Lookup.class);
     public static final MethodType TYPE_BSM_PUTFIELD = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class, MethodHandles.Lookup.class);
-    public static final MethodType TYPE_BSM_INVOKE_SPECIAL_FROM_BACK = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class, MethodHandles.Lookup.class);
+    public static final MethodType TYPE_BSM_INVOKE_VIRTUAL_FROM_BACK = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class, MethodHandles.Lookup.class);
     public static final MethodType TYPE_NO_LOOKUP_BSM_GETFIELD = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
     public static final MethodType TYPE_NO_LOOKUP_BSM_PUTFIELD = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
     public static final MethodType TYPE_PUTFIELD = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, String.class, Class.class, Object.class);
@@ -61,7 +61,7 @@ public class RT {
     public static final MethodType TYPE_METAFACTORY = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, MethodHandles.Lookup.class, String.class);
     public static final MethodType TYPE_BSM_CREATE_ANY = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class, MethodHandles.Lookup.class);
     public static final MethodType TYPE_NO_LOOKUP_BSM_CREATE_ANY = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
-    public static final MethodType TYPE_INVOKE_SPECIAL_FROM_BACK = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, String.class, MethodType.class, Object.class);
+    public static final MethodType TYPE_INVOKE_VIRTUAL_FROM_BACK = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, String.class, MethodType.class, Object.class);
     public static final MethodType TYPE_INVOKE_INLINED_CALL = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, String.class, MethodType.class, Object.class);
 
     public static final MethodType BSMS_TYPE = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
@@ -118,7 +118,7 @@ public class RT {
      * @throws Throwable
      */
     @SuppressWarnings("unused")
-    public static CallSite bsm_newBackSpecies(MethodHandles.Lookup lookup, String name, MethodType type, String owner, String genericName) throws Throwable {
+    public static CallSite bsm_newBackSpecies(MethodHandles.Lookup lookup, MethodType type, String name, String owner, String genericName) throws Throwable {
         Class<?> frontClass = ClassLoader.getSystemClassLoader().loadClass(owner);
         return new ConstantCallSite(createBackSpecies(lookup, type, frontClass, genericName));
     }
@@ -136,7 +136,7 @@ public class RT {
     @SuppressWarnings("unused")
     public static CallSite bsm_inlinedBackCall(MethodHandles.Lookup lookup, String methodName, MethodType type) throws Throwable {
         MethodHandle mh = lookup.findStatic(RT.class, "invokeInlinedCall", TYPE_INVOKE_INLINED_CALL);
-        mh = mh.bindTo(lookup).bindTo(type).bindTo(methodName);
+        mh = mh.bindTo(lookup).bindTo(methodName).bindTo(type);
         return new ConstantCallSite(invokerOf(type.dropParameterTypes(0, 1), mh).asType(type));
     }
 
@@ -153,7 +153,7 @@ public class RT {
      */
     @SuppressWarnings("unused")
     // TODO try to put private here.
-    public static MethodHandle invokeInlinedCall(MethodHandles.Lookup lookup, MethodType type, String methodName, Object front) throws Throwable {
+    public static MethodHandle invokeInlinedCall(MethodHandles.Lookup lookup, String methodName, MethodType type, Object front) throws Throwable {
         return lookup.findStatic(getBack__(lookup, front).getClass(), methodName, type).bindTo(front);
     }
 
@@ -179,7 +179,6 @@ public class RT {
 
     // TODO remove this method to prevent the boxing of the return value and the arguments.
     public static Object invokeCall(MethodHandles.Lookup lookup, MethodType type, String methodName, Object receiver, Object... args) throws Throwable {
-        // System.out.println("invokeCall : lookup = [" + lookup + "], type = [" + type + "], name = [" + name + "], receiver = [" + receiver + "], args = [" + args + "]");
         MethodHandle mh = lookup.findStatic(receiver.getClass(), methodName, type).asType(type).asSpreader(Object[].class, args.length);
         return mh.invoke(args);
     }
@@ -219,7 +218,6 @@ public class RT {
     // TODO remove "name" parameter.
     public static CallSite bsm_createAny(MethodHandles.Lookup lookup, String name, MethodType erasedType,
                                          String genericName, MethodHandles.Lookup front) throws Throwable {
-        // System.out.println("bsm_createAny : lookup = [" + lookup + "], name = [" + name + "], erasedType = [" + erasedType + "], genericName = [" + genericName + "], front = [" + front + "]");
         MethodHandles.Lookup l = front == null ? lookup : front;
         String rawAnyName = Type.rawName(genericName);
         Class<?> frontClass = l.lookupClass().getClassLoader().loadClass(rawAnyName);
@@ -355,7 +353,7 @@ public class RT {
     }
 
     /**
-     * This bootstrap method returns an adapted callSite to perform an invoke special inside a Back species instance.
+     * This bootstrap method returns an adapted callSite to perform an invoke virtual inside a Back species instance.
      * Since it only has erased types, this bsm is needed to target the correctly typed method from the back instance.
      *
      * @param lookup        lookup of the calling class
@@ -369,32 +367,32 @@ public class RT {
      * @throws IllegalAccessException if the front lookup is null.
      */
     @SuppressWarnings("unused")
-    public static CallSite bsm_invokeSpecialFromBack(MethodHandles.Lookup lookup, String methodName, MethodType erasedType,
+    public static CallSite bsm_invokeVirtualFromBack(MethodHandles.Lookup lookup, String methodName, MethodType erasedType,
                                                      String notErasedDesc, MethodHandles.Lookup front)
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException {
         if (front == null) {
-            throw new IllegalStateException("Front lookup can not be null during special invocations from a back class.");
+            throw new IllegalStateException("Front lookup can not be null during virtual invocations from a back class.");
         }
 
         MethodHandle mh;
         // Determining if the receiver is a typeVar or a parameterized type.
         Type methodType = Type.getMethodType(notErasedDesc);
         Type receiver = methodType.getArgumentTypes()[0];
+        String finalDesc;
+        MethodType mt;
+        // If this is a parameterized type, inlining its call by passing through its back field.
         if (Type.isParameterizedType(receiver)) {
             mh = front.findStatic(RT.class, "invokeInlinedCall", TYPE_INVOKE_INLINED_CALL);
-            // Removing the receiver parameterized type information.
-            notErasedDesc = Type.translateMethodDescriptor(notErasedDesc);
         } else {
-            mh = front.findStatic(RT.class, "invokeSpecialFromBack", TYPE_INVOKE_SPECIAL_FROM_BACK);
+            mh = front.findStatic(RT.class, "invokeVirtualFromBack", TYPE_INVOKE_VIRTUAL_FROM_BACK);
         }
 
-        MethodType mt = MethodType.fromMethodDescriptorString(notErasedDesc, front.lookupClass().getClassLoader());
-        mh = MethodHandles.insertArguments(mh, 0, front, methodName, mt);
+        mh = MethodHandles.insertArguments(mh, 0, front, methodName, erasedType);
         return new ConstantCallSite(invokerOf(erasedType.dropParameterTypes(0, 1), mh));
     }
 
     /**
-     * This method returns an adapted methodHandle to perform an invoke special inside a Back species instance.
+     * This method returns an adapted methodHandle to perform an invoke virtual inside a Back species instance.
      * Since it only has erased types, this bsm is needed to target the correctly typed method from the back instance.
      *
      * @param lookup     lookup of the calling class
@@ -406,9 +404,9 @@ public class RT {
      * @throws IllegalAccessException if the front lookup is null.
      */
     @SuppressWarnings("unused")
-    public static MethodHandle invokeSpecialFromBack(Lookup lookup, String methodName, MethodType methodType, Object receiver)
-            throws NoSuchMethodException, IllegalAccessException {
-        return lookup.findSpecial(lookup.lookupClass(), methodName, methodType, receiver.getClass()).bindTo(receiver);
+    public static MethodHandle invokeVirtualFromBack(Lookup lookup, String methodName, MethodType methodType, Object receiver)
+            throws Throwable {
+        return lookup.findVirtual(receiver.getClass(), methodName, methodType.dropParameterTypes(0, 1)).bindTo(receiver);
     }
 
     /* TODO Not used yet used
@@ -471,37 +469,95 @@ public class RT {
         SubstitutionTable substitutionTable = SubstitutionTableReader.read(backCode);
         String[] classes = Type.getParameterizedTypeValues(genericName);
         Object[] pool = new Object[substitutionTable.getMax() + 1];
+        // Contains the computed instantiation of a given method name.
+        HashMap<String, String> methodInstantiations = new HashMap<>();
+
         for (Map.Entry<Integer, Map.Entry<String, String>> descs : substitutionTable.getDescriptors().entrySet()) {
             Integer index = descs.getKey();
             Map.Entry<String, String> ownerAndDescriptor = descs.getValue();
             String owner = ownerAndDescriptor.getKey();
             String descriptor = ownerAndDescriptor.getValue();
 
-            if (!owner.equals(BackClassVisitor.RT_METHOD_HANDLE_TYPE)) {
-                pool[index] = Type.specializeDescriptor(descriptor, classes);
-                continue;
+            // Processing key instantiations
+            // TODO prevent this double iteration please.
+            switch (owner) {
+                case BackClassVisitor.RT_METHOD_INSTANTIATION_TYPE_KEY: {
+                    String[] split = descriptor.split("_", 2);
+                    if (split.length != 2) {
+                        throw new IllegalStateException("The key has to contain the method's name : " + descriptor);
+                    }
+                    String methodName = split[0];
+                    String methodDescriptor = split[1];
+                    String oldValue = methodInstantiations.get(methodName);
+                    if (oldValue != null) {
+                        throw new IllegalStateException("The method key for : " + methodName + " has already been computed : " + oldValue);
+                    }
+                    String instantiation = Type.instantiateMethodDescriptor(methodDescriptor, classes);
+                    methodInstantiations.put(methodName, instantiation);
+                    pool[index] = instantiation;
+                    break;
+                }
+                default:
+                    break;
             }
-            switch (descriptor) {
-                case BackClassVisitor.HANDLE_RT_BSM_NEW:
-                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_createAny", TYPE_BSM_CREATE_ANY, 4);
+        }
+
+        for (Map.Entry<Integer, Map.Entry<String, String>> descs : substitutionTable.getDescriptors().entrySet()) {
+            Integer index = descs.getKey();
+            Map.Entry<String, String> ownerAndDescriptor = descs.getValue();
+            String owner = ownerAndDescriptor.getKey();
+            String descriptor = ownerAndDescriptor.getValue();
+
+            switch (owner) {
+                default:
+                case BackClassVisitor.RT_SPECIALIZABLE_DESCRIPTOR_TYPE:
+                    pool[index] = Type.specializeDescriptor(descriptor, classes);
                     break;
-                case BackClassVisitor.HANDLE_RT_BSM_GET_FIELD:
-                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_getField", TYPE_BSM_GETFIELD, 4);
+                case BackClassVisitor.RT_METHOD_INSTANTIATION_TYPE_KEY:
+                    continue;
+                case BackClassVisitor.RT_METHOD_INSTANTIATIONS_TYPE_TESTS: {
+                    String[] split = descriptor.split("_", 2);
+                    if (split.length != 2) {
+                        throw new IllegalStateException("The key has to contain the method's name : " + descriptor);
+                    }
+                    String methodName = split[0];
+                    String methodDescriptor = split[1];
+                    String key = methodInstantiations.get(methodName);
+                    if (key == null) {
+                        throw new IllegalStateException("The instantiation key for method : " + methodName + " does not exist : " + descriptor + " map : " + methodInstantiations);
+                    }
+                    pool[index] = methodDescriptor.contains(key) ? key : methodDescriptor;
                     break;
-                case BackClassVisitor.HANDLE_RT_BSM_PUT_FIELD:
-                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_putField", TYPE_BSM_PUTFIELD, 4);
-                    break;
-                case BackClassVisitor.HANDLE_RT_BSM_INVOKE_SPECIAL_FROM_BACK:
-                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_invokeSpecialFromBack", TYPE_BSM_INVOKE_SPECIAL_FROM_BACK, 4);
-                    break;
-                case BackClassVisitor.HANDLE_RT_METAFACTORY:
-                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "metafactory", TYPE_METAFACTORY, 3);
+                }
+                case BackClassVisitor.RT_METHOD_HANDLE_TYPE:
+                    insertMethodHandleWithLookupPatched(frontClassLookup, pool, index, descriptor);
                     break;
             }
+
         }
         Class<?> backClass = UNSAFE.defineAnonymousClass(Object.class, backCode, pool);
         MethodHandle constructor = frontClassLookup.findConstructor(backClass, type.changeReturnType(void.class));
         return constructor.asType(type.changeReturnType(Object.class)); // The return type is considered as a plain Object.
+    }
+
+    private static void insertMethodHandleWithLookupPatched(Lookup frontClassLookup, Object[] pool, Integer index, String descriptor) throws NoSuchMethodException, IllegalAccessException {
+        switch (descriptor) {
+            case BackClassVisitor.HANDLE_RT_BSM_NEW:
+                pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_createAny", TYPE_BSM_CREATE_ANY, 4);
+                break;
+            case BackClassVisitor.HANDLE_RT_BSM_GET_FIELD:
+                pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_getField", TYPE_BSM_GETFIELD, 4);
+                break;
+            case BackClassVisitor.HANDLE_RT_BSM_PUT_FIELD:
+                pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_putField", TYPE_BSM_PUTFIELD, 4);
+                break;
+            case BackClassVisitor.HANDLE_RT_BSM_INVOKE_VIRTUAL_FROM_BACK:
+                pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_invokeVirtualFromBack", TYPE_BSM_INVOKE_VIRTUAL_FROM_BACK, 4);
+                break;
+            case BackClassVisitor.HANDLE_RT_METAFACTORY:
+                pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "metafactory", TYPE_METAFACTORY, 3);
+                break;
+        }
     }
 
     /**
@@ -552,8 +608,7 @@ public class RT {
     private static Unsafe initUnsafe() {
         try {
             Class<?> unsafeClass = Unsafe.class;
-            Field theUnsafe = null;
-            theUnsafe = unsafeClass.getDeclaredField("theUnsafe");
+            Field theUnsafe = unsafeClass.getDeclaredField("theUnsafe");
             theUnsafe.setAccessible(true);
             return (Unsafe) theUnsafe.get(null);
         } catch (NoSuchFieldException | IllegalAccessException e) {

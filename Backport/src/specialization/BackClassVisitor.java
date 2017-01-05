@@ -1,10 +1,11 @@
 package specialization;
 
+import com.sun.tools.doclets.internal.toolkit.*;
 import org.objectweb.asm.*;
+import org.objectweb.asm.ClassWriter;
 import rt.Opcodes;
 
 /**
- *
  * Created by Jefferson Mangue on 09/06/2016.
  */
 public class BackClassVisitor extends ClassVisitor {
@@ -12,8 +13,11 @@ public class BackClassVisitor extends ClassVisitor {
     public static final String ANY_PACKAGE = ""; // "any/";
     public static final String BACK_FACTORY_NAME = "$BackFactory";
     public static final String RT_METHOD_HANDLE_TYPE = "RTMethodHandle";
+    public static final String RT_SPECIALIZABLE_DESCRIPTOR_TYPE = "RTMethodDescriptor";
+    public static final String RT_METHOD_INSTANTIATION_TYPE_KEY = "RTMethodInstantiationTyKey";
+    public static final String RT_METHOD_INSTANTIATIONS_TYPE_TESTS = "RTMethodInstantiationsTypeTests"; // 11010_110100_ ...
     public static final String HANDLE_RT_BSM_NEW = "handle_rt_bsm_new";
-    public static final String HANDLE_RT_BSM_INVOKE_SPECIAL_FROM_BACK = "handle_rt_bsm_invoke_special";
+    public static final String HANDLE_RT_BSM_INVOKE_VIRTUAL_FROM_BACK = "handle_rt_bsm_invoke_special_from_back";
     public static final String HANDLE_RT_BSM_GET_FIELD = "handle_rt_bsm_getField";
     public static final String HANDLE_RT_BSM_PUT_FIELD = "handle_rt_bsm_putField";
     public static final String HANDLE_RT_METAFACTORY = "handle_rt_metafactory";
@@ -32,12 +36,13 @@ public class BackClassVisitor extends ClassVisitor {
 
     @Override
     public void visitEnd() {
+
         super.visitEnd();
         // Telling the substitution table contained inside the ClassWriter to register placeholder referencing method handles
         // of the RT package at runtime.
         ClassWriter cw = (ClassWriter) this.cv;
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_NEW);
-        cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_INVOKE_SPECIAL_FROM_BACK);
+        cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_INVOKE_VIRTUAL_FROM_BACK);
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_GET_FIELD);
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_PUT_FIELD);
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_METAFACTORY);
@@ -73,7 +78,7 @@ public class BackClassVisitor extends ClassVisitor {
             // Inserting the front name. Erasure of : Type.getType('L' + frontName + ';')
             methodDescriptor = insertMethodArgumentType(desc, Type.getType(Object.class));
         }
-        return new BackMethodVisitor(api, name, frontName, this.name, super.visitMethod(methodAccess, name, methodDescriptor, null, exceptions));
+        return BackMethodVisitor.createBackMethodVisitor(api, name, frontName, this.name, methodDescriptor, methodAccess, super.visitMethod(methodAccess, name, methodDescriptor, null, exceptions));
     }
 
     public String getName() {
@@ -85,12 +90,15 @@ public class BackClassVisitor extends ClassVisitor {
         Type[] argumentTypes = mType.getArgumentTypes();
         Type[] parameterTypes = new Type[argumentTypes.length + 1];
         parameterTypes[0] = insertedType;
-        for (int i = 1; i < parameterTypes.length; i++) { parameterTypes[i] = argumentTypes[i - 1]; }
+        for (int i = 1; i < parameterTypes.length; i++) {
+            parameterTypes[i] = argumentTypes[i - 1];
+        }
         return Type.getMethodDescriptor(mType.getReturnType(), parameterTypes);
     }
 
     private void visitBSMRTBridge() {
         // Visiting the inner bootstrap method.
+        // This is the method writer here.
         MethodVisitor mv = super.visitMethod(Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC, BSM_RT_BRIDGE, BSM_RT_BRIDGE_DESC,
                 null, null);
         mv.visitCode();

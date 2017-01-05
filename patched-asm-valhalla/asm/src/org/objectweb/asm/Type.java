@@ -1106,4 +1106,8 @@ public class Type {
         String types = genericClass.substring(genericClass.indexOf('<') + 1, genericClass.indexOf('>'));
         return types.split(",");
     }
+
+    public boolean isTypeVar() {
+        return sort == TYPE_VAR;
+    }
 }

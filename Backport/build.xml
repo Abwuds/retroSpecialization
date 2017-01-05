@@ -9,8 +9,8 @@
 	<property name="dist.dir"	value="${build.dir}/dist"/>
 
 	<property name="asm.dir"	value="../patched-asm-valhalla/asm"/>
-	<property name="asm.name"	value="asm-5.1"/>
-	<property name="asm.jar"	value="${asm.dir}/output/dist/lib/${asm.name}.jar"/>
+	<property name="asm.name"	value="asm-debug-all-5.1"/>
+	<property name="asm.jar"	value="${asm.dir}/output/dist/lib/all/${asm.name}.jar"/>
 
 	<path id="classpath">
 		<fileset dir="${lib.dir}" includes="**/*.jar"/>
@@ -40,17 +40,17 @@
 	</target>
 
 	<target name="compile-asm">
-		<echo message="Compiling patched asm jar inside ${dist.dir}"/>
+		<echo message="Compiling patched asm jar inside ${asm.jar}"/>
 		<mkdir dir="${lib.dir}"/>
 		
 		<!-- Executing the asm ant to build a jar -->
-		<ant antfile="build.xml" target="dist" dir="${asm.dir}"/>
+		<ant antfile="build.xml" target="jar" dir="${asm.dir}"/>
 		
 		<!-- Copying the jar into our lib folder -->
 		<copy file="${asm.jar}" todir="${lib.dir}"/>
 		
 		<!-- Deleting asm's generations -->
-		<ant antfile="build.xml" target="clean" dir="${asm.dir}"/>
+		<!--<ant antfile="build.xml" target="clean" dir="${asm.dir}"/>-->
 	</target>
 
 
@@ -59,7 +59,7 @@
 		<antcall target="compile-asm"/>
 	</target>
 
-	<target name="compile">
+	<target name="compile" depends="clean">
 		<echo message="Compiling backport"/>
 		<antcall target="compile-asm-if-needed"/>
 

@@ -409,13 +409,26 @@ public abstract class MethodVisitor {
 
     /**
      * Visits a typed instruction. A typed instruction is an instruction that
-     * takes a typevar instance.
+     * loads, stores or create a type var instance.
      * @param name
      * @param typedOpcode
      */
     public void visitTypedInsn(String name, int typedOpcode) {
         if (mv != null) {
             mv.visitTypedInsn(name, typedOpcode);
+        }
+    }
+
+    /**
+     * Visits a typed instruction. A typed instruction is an instruction that
+     * loads, stores or create a type var instance.
+     * @param name
+     * @param typedOpcode
+     * @param parameter
+     */
+    public void visitTypedTypeInsnWithParameter(String name, int typedOpcode, int parameter) {
+        if (mv != null) {
+            mv.visitTypedTypeInsnWithParameter(name, typedOpcode, parameter);
         }
     }
 
@@ -613,9 +626,9 @@ public abstract class MethodVisitor {
         }
     }
 
-    public void visitLdcTypedString(final String owner, final String cst) {
+    public void visitLdcPlaceHolderString(final String owner, final String cst, final String metaValue, final boolean typeVar) {
         if (mv != null) {
-            mv.visitLdcTypedString(owner, cst);
+            mv.visitLdcPlaceHolderString(owner, cst, metaValue, typeVar);
         }
     }
 
