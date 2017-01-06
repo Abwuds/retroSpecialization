@@ -16,10 +16,10 @@ by specializing them at runtime. The two principal values are :
 ## Project
 The goal of the retroSpecialization project is to back port the Generic Specialization
 as described in the project [Valhalla](http://openjdk.java.net/projects/valhalla/) to 
-Java 7 and 8 projects.
+Java 7 and 8.
 The project is more a rewriter than a compiler since Java files have to first be
 compiled with the Valhalla's compiler and then rewritten by the retroSpecialization
-executable to be executed under Java 7 and 8.
+executable to be executed on Java 7 and 8 VM.
 
 ## Example
 ```
@@ -75,6 +75,7 @@ Run `ant help` to get the ant usage.
 
 ## Known Limitations
 * Does not support the inheritance
+* Only supported by the OpenJDK's VM
 	
 ## Version History
 	
