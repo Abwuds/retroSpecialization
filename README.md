@@ -74,7 +74,6 @@ Run `ant -Dfolder={Folder to rewrite} run` to run the project.
 Run `ant help` to get the ant usage.
 
 ## Known Limitations
-* Still in development
 * Does not support the inheritance
 	
 ## Version History
