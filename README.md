@@ -10,7 +10,7 @@ The Generic Specialization aims to allow the use of primitive type with generics
 by specializing them at runtime. The two principal values are :
 
 1. Suppression of the boxing 
-2. Suppression of pseudo-specialized types such as `IntStream`, `ToIntFunction`
+2. Suppression of pseudo-specialized types such as `IntStream`, `ToIntFunction`...
 
 
 ## Project
