@@ -1,0 +1,94 @@
+<project name="BackportVT-v0.1" basedir=".">
+	
+
+	<property name="src.dir"	value="src"/>
+	<property name="lib.dir"	value="lib"/>
+
+	<property name="build.dir" 	value="build"/>
+	<property name="classes.dir"	value="${build.dir}/classes"/>
+	<property name="dist.dir"	value="${build.dir}/dist"/>
+
+	<property name="asm.dir"	value="../patched-asm-valhalla/asm"/>
+	<property name="asm.name"	value="asm-debug-all-5.1"/>
+	<property name="asm.jar"	value="${asm.dir}/output/dist/lib/all/${asm.name}.jar"/>
+
+	<path id="classpath">
+		<fileset dir="${lib.dir}" includes="**/*.jar"/>
+	</path>
+
+
+	<property name="main-class"	value="value.Rewriter"/>
+
+	<target name="help">
+		<echo message="The available targets are the following:" />
+		<echo message="  setup: set ups the project by compiling needed libraries into ${lib.dir}" />
+		<echo message="  compile-asm: compiles the patched asm into ${build.dir}" />
+		<echo message="  dist: compiles the dist into ${dist.dir}" />
+		<echo message="  compile: compiles the product into ${build.dir}" />
+		<echo message="  run: runs the backport on the given folder containing a Valhalla project to port." />
+		<echo message="      Usage : ant -Dfolder={Folder to rewrite} run" />
+		<echo message="  clean: removes all generated files." />
+		<echo message="  TODO test: run all tests" />
+	</target>
+
+	<target name="clean">
+		<delete dir="${build.dir}"/>
+	</target>
+
+	<target name="check-compiled-asm">
+    		<available file="${lib.dir}/${asm.name}.jar" property="${asm.name}.present"/>
+	</target>
+
+	<target name="compile-asm">
+		<echo message="Compiling patched asm jar inside ${asm.jar}"/>
+		<mkdir dir="${lib.dir}"/>
+		
+		<!-- Executing the asm ant to build a jar -->
+		<ant antfile="build.xml" target="jar" dir="${asm.dir}"/>
+		
+		<!-- Copying the jar into our lib folder -->
+		<copy file="${asm.jar}" todir="${lib.dir}"/>
+		
+		<!-- Deleting asm's generations -->
+		<!--<ant antfile="build.xml" target="clean" dir="${asm.dir}"/>-->
+	</target>
+
+
+	<target name="compile-asm-if-needed" depends="check-compiled-asm" unless="${asm.name}.present">
+		<echo message="Compilation of asm needed"/>
+		<antcall target="compile-asm"/>
+	</target>
+
+	<target name="compile" depends="clean">
+		<echo message="Compiling backport"/>
+		<antcall target="compile-asm-if-needed"/>
+
+		<mkdir dir="${classes.dir}"/>
+		<javac srcdir="src" destdir="${classes.dir}" classpathref="classpath">
+			<compilerarg value="-XDignore.symbol.file"/>
+		</javac>		
+	</target>
+
+	<target name="dist" depends="compile">
+		<mkdir dir="${dist.dir}"/>
+		<jar destfile="${dist.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="${main-class}"/>
+			</manifest>
+			<zipfileset src="${lib.dir}/${asm.name}.jar" excludes="META-INF/*.SF" />
+		</jar>
+	</target>
+	
+	<path id="application" location="${dist.dir}/${ant.project.name}.jar"/>
+	
+	<target name="run" depends="dist">
+		<java fork="true" classname="${main-class}">
+			<classpath>
+				<path refid="classpath"/>
+				<path refid="application"/>
+			</classpath>
+		      <arg value="${folder}"/>
+		</java>		
+	</target>
+</project>
+
