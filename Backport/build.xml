@@ -1,4 +1,4 @@
-<project name="Backport-v0.1" basedir=".">
+<project name="BackportSpecialization-v0.1" basedir=".">
 	
 
 	<property name="src.dir"	value="src"/>

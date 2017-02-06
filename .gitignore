@@ -6,7 +6,7 @@
 
 # Package Files #
 *.jar
-!Backport/build/dist/Backport-v0.1.jar
+!Backport/build/dist/BackportSpecialization-v0.1.jar
 !Backport/build/dist/rt/*.class
 *.war
 *.ear

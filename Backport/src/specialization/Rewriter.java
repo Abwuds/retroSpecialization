@@ -38,7 +38,7 @@ public class Rewriter {
      *
      * @throws IOException TODO walk recursively.
      */
-    public void compileDirectory() throws IOException {
+    private void compileDirectory() throws IOException {
         File[] files = new File(directory).listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
