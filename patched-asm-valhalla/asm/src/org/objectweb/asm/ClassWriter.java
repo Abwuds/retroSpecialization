@@ -545,86 +545,94 @@ public class ClassWriter extends ClassVisitor {
                 + "DDDEEEEEEEEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                 + "AAAAAAAAAAAAAAAAANAAAAAAAAAAAAAAAAAAAAJJJJJJJJJJJJJJJJDOPAA"
                 + "AAAAGGGGGGGHIFBFAAFFAARQJJKKJJJJJJJJJJJJJJJJJJ";*/
-        String s = "AAAAAAAAAAAAAAAABCLMMDDDDDEEEEEEEEEEEEEEEEEEEEAAAAAAAADDD" +
-                "DDEEEEEEEEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-                "AAAAAAAAAAAAAAANAAAAAAAAAAAAAAAAAAAAJJJJJJJJJJJJJJJJDOPAAAAA" +
-                "AGGGGGGGHIFBFAAFFAARQJJKKAAAAAAAAAASJJJJJJJJJJJJJJJJJJ\n";
+        String s = "AAAAAAAAAAAAAAAABCLMMDDDDDEEEEEEEEEEEEEEEEEEEEAAAAAAAADDDDD" +
+                "EEEEEEEEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+                "AAAAAAAAAAANAAAAAAAAAAAAAAAAAAAAJJJJJJJJJJJJJJJJDOPAAAAAAGGGGG" +
+                "GGHIFBFAAFFAARQJJKKAAAAAAAASSSJJJJJJJJJJJJJJJJJJ\n";
 
         for (i = 0; i < b.length; ++i) {
             b[i] = (byte) (s.charAt(i) - 'A');
         }
         TYPE = b;
 
-        // code to generate the above string
-        //
-        // NOTE : To handle new Valhalla instructions, this code as been replaced by the
-        // code inside test/resources/TypeGenerator#generate.
-        //
-        // // SBYTE_INSN instructions
-        // b[Constants.NEWARRAY] = SBYTE_INSN;
-        // b[Constants.BIPUSH] = SBYTE_INSN;
-        //
-        // // SHORT_INSN instructions
-        // b[Constants.SIPUSH] = SHORT_INSN;
-        //
-        // // (IMPL)VAR_INSN instructions
-        // b[Constants.RET] = VAR_INSN;
-        // for (i = Constants.ILOAD; i <= Constants.ALOAD; ++i) {
-        // b[i] = VAR_INSN;
-        // }
-        // for (i = Constants.ISTORE; i <= Constants.ASTORE; ++i) {
-        // b[i] = VAR_INSN;
-        // }
-        // for (i = 26; i <= 45; ++i) { // ILOAD_0 to ALOAD_3
-        // b[i] = IMPLVAR_INSN;
-        // }
-        // for (i = 59; i <= 78; ++i) { // ISTORE_0 to ASTORE_3
-        // b[i] = IMPLVAR_INSN;
-        // }
-        //
-        // // TYPE_INSN instructions
-        // b[Constants.NEW] = TYPE_INSN;
-        // b[Constants.ANEWARRAY] = TYPE_INSN;
-        // b[Constants.CHECKCAST] = TYPE_INSN;
-        // b[Constants.INSTANCEOF] = TYPE_INSN;
-        //
-        // // (Set)FIELDORMETH_INSN instructions
-        // for (i = Constants.GETSTATIC; i <= Constants.INVOKESTATIC; ++i) {
-        // b[i] = FIELDORMETH_INSN;
-        // }
-        // b[Constants.INVOKEINTERFACE] = ITFMETH_INSN;
-        // b[Constants.INVOKEDYNAMIC] = INDYMETH_INSN;
-        //
-        // // LABEL(W)_INSN instructions
-        // for (i = Constants.IFEQ; i <= Constants.JSR; ++i) {
-        // b[i] = LABEL_INSN;
-        // }
-        // b[Constants.IFNULL] = LABEL_INSN;
-        // b[Constants.IFNONNULL] = LABEL_INSN;
-        // b[200] = LABELW_INSN; // GOTO_W
-        // b[201] = LABELW_INSN; // JSR_W
-        // // temporary opcodes used internally by ASM - see Label and
-        // MethodWriter
-        // for (i = 202; i < 220; ++i) {
-        // b[i] = LABEL_INSN;
-        // }
-        //
-        // // LDC(_W) instructions
-        // b[Constants.LDC] = LDC_INSN;
-        // b[19] = LDCW_INSN; // LDC_W
-        // b[20] = LDCW_INSN; // LDC2_W
-        //
-        // // special instructions
-        // b[Constants.IINC] = IINC_INSN;
-        // b[Constants.TABLESWITCH] = TABL_INSN;
-        // b[Constants.LOOKUPSWITCH] = LOOK_INSN;
-        // b[Constants.MULTIANEWARRAY] = MANA_INSN;
-        // b[196] = WIDE_INSN; // WIDE
-        //
-        // for (i = 0; i < b.length; ++i) {
-        // System.err.print((char)('A' + b[i]));
-        // }
-        // System.err.println();
+//
+//        // code to generate the above string
+//        //
+//        // NOTE : To handle new Valhalla instructions, this code as been replaced by the
+//        // code inside test/resources/TypeGenerator#generate.
+//
+//        int i;
+//        // SBYTE_INSN instructions
+//        byte[] b = new byte[231];
+//        b[Opcodes.NEWARRAY] = SBYTE_INSN;
+//        b[Opcodes.BIPUSH] = SBYTE_INSN;
+//
+////          SHORT_INSN instructions
+//        b[Opcodes.SIPUSH] = SHORT_INSN;
+//
+////          (IMPL)VAR_INSN instructions
+//        b[Opcodes.RET] = VAR_INSN;
+//        for (i = Opcodes.ILOAD; i <= Opcodes.ALOAD; ++i) {
+//            b[i] = VAR_INSN;
+//        }
+//        for (i = Opcodes.ISTORE; i <= Opcodes.ASTORE; ++i) {
+//            b[i] = VAR_INSN;
+//        }
+//        for (i = 26; i <= 45; ++i) { // ILOAD_0 to ALOAD_3
+//            b[i] = IMPLVAR_INSN;
+//        }
+//        for (i = 59; i <= 78; ++i) { // ISTORE_0 to ASTORE_3
+//            b[i] = IMPLVAR_INSN;
+//        }
+//
+//        // TYPE_INSN instructions
+//        b[Opcodes.NEW] = TYPE_INSN;
+//        b[Opcodes.ANEWARRAY] = TYPE_INSN;
+//        b[Opcodes.CHECKCAST] = TYPE_INSN;
+//        b[Opcodes.INSTANCEOF] = TYPE_INSN;
+//
+//        // (Set)FIELDORMETH_INSN instructions
+//        for (i = Opcodes.GETSTATIC; i <= Opcodes.INVOKESTATIC; ++i) {
+//            b[i] = FIELDORMETH_INSN;
+//        }
+//        b[Opcodes.INVOKEINTERFACE] = ITFMETH_INSN;
+//        b[Opcodes.INVOKEDYNAMIC] = INDYMETH_INSN;
+//
+//        // LABEL(W)_INSN instructions
+//        for (i = Opcodes.IFEQ; i <= Opcodes.JSR; ++i) {
+//            b[i] = LABEL_INSN;
+//        }
+//        b[Opcodes.IFNULL] = LABEL_INSN;
+//        b[Opcodes.IFNONNULL] = LABEL_INSN;
+//        b[200] = LABELW_INSN; // GOTO_W
+//        b[201] = LABELW_INSN; // JSR_W
+//        // temporary opcodes used internally by ASM - see Label and
+//        for (i = 213; i < 231; ++i) {
+//            b[i] = LABEL_INSN;
+//        }
+//
+//        // LDC(_W) instructions
+//        b[Opcodes.LDC] = LDC_INSN;
+//        b[19] = LDCW_INSN; // LDC_W
+//        b[20] = LDCW_INSN; // LDC2_W
+//
+//        // special instructions
+//        b[Opcodes.IINC] = IINC_INSN;
+//        b[Opcodes.TABLESWITCH] = TABL_INSN;
+//        b[Opcodes.LOOKUPSWITCH] = LOOK_INSN;
+//        b[Opcodes.MULTIANEWARRAY] = MANA_INSN;
+//        b[196] = WIDE_INSN; // WIDE
+//
+//
+//        // New instructions
+//        b[Opcodes.TYPED] = TYPED_INSN;
+//        b[Opcodes.VRETURN] = TYPED_INSN;
+//        b[Opcodes.VGETFIELD] = TYPED_INSN;
+//
+//        for (i = 0; i < b.length; ++i) {
+//            System.err.print((char) ('A' + b[i]));
+//        }
+//        System.err.println();
     }
 
     // ------------------------------------------------------------------------

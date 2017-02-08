@@ -372,5 +372,7 @@ public interface Opcodes {
     // int GOTO_W = 200; // -
     // int JSR_W = 201; // -
     // New instructions.
+    int VRETURN = 210;
+    int VGETFIELD = 211;
     int TYPED = 212;
 }
