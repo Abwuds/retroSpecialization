@@ -1,10 +1,15 @@
 package value;
 
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Created by Fabien GIACHERIO on 06/02/17.
@@ -40,7 +45,32 @@ public class Rewriter {
             throw new IllegalStateException("Can not find the folder : " + directory);
         }
         for (File f : files) {
-            //compileClazz(f.toPath());
+            compileClazz(f.toPath());
+        }
+    }
+
+    /**
+     * Compile the class at the given path according to the rewriting rules.
+     *
+     * @param path the path of the file to compileDirectory.
+     * @throws IOException
+     */
+    private void compileClazz(final Path path) throws IOException {
+        System.out.println("Writing class : " + path);
+        writeClazzTo(path.getFileName().toString(), dump(path));
+    }
+
+    private byte[] dump(Path path) {
+        try {
+            byte[] bytes = Files.readAllBytes(path);
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            VTClassVisitor vtClassVisitor = new VTClassVisitor(cw);
+            new ClassReader(bytes).accept(vtClassVisitor, 0);
+            // Returning the current class byte array.
+            return cw.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -80,5 +110,6 @@ public class Rewriter {
         System.out.println(dir);
         Rewriter rewriter = new Rewriter(dir);
         System.out.println("Directory : " + dir);
+        rewriter.compileDirectory();
     }
 }
