@@ -372,7 +372,16 @@ public interface Opcodes {
     // int GOTO_W = 200; // -
     // int JSR_W = 201; // -
     // New instructions.
+    int VLOAD = 203;
+    int VSTORE = 204;
+    int VALOAD = 205;
+    int VASTORE = 206;
+    int VNEW = 207;
+    int VNEWARRAY = 208;
+    int VMULTIVNEWARRAY = 209;
     int VRETURN = 210;
     int VGETFIELD = 211;
     int TYPED = 212;
+    //int VBOX = 216;
+    //int VUNBOX = 217;
 }
