@@ -550,13 +550,12 @@ public class ClassWriter extends ClassVisitor {
                 "AAAAAAAAAAANAAAAAAAAAAAAAAAAAAAAJJJJJJJJJJJJJJJJDOPAAAAAAGGGGG" +
                 "GGHIFBFAAFFAARQJJKKAAAAAAAASSSJJJJJJJJJJJJJJJJJJ\n";*/
 
-        String s = "AAAAAAAAAAAAAAAABCLMMDDDDDEEEEEEEEEEEEEEEEEEEEAAAAAAAADDDDDEEEEEEEEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANAAAAAAAAAAAAAAAAAAAAJJJJJJJJJJJJJJJJDOPAAAAAAGGGGGGGHIFBFAAFFAARQJJKKADDSSFFAAGSGJJJJJJJJJJJJJJJJJ\n";
+        String s = "AAAAAAAAAAAAAAAABCLMMDDDDDEEEEEEEEEEEEEEEEEEEEAAAAAAAADDDDDEEEEEEEEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANAAAAAAAAAAAAAAAAAAAAJJJJJJJJJJJJJJJJDOPAAAAAAGGGGGGGHIFBFAAFFAARQJJKKADDSSGFAAGSGJJJJJJJJJJJJJJJJJ\n";
         for (i = 0; i < b.length; ++i) {
             b[i] = (byte) (s.charAt(i) - 'A');
         }
         TYPE = b;
 
-//
 //        // code to generate the above string
 //        //
 //        // NOTE : To handle new Valhalla instructions, this code as been replaced by the
@@ -626,16 +625,24 @@ public class ClassWriter extends ClassVisitor {
 //
 //
 //        // New instructions
-//        b[Opcodes.TYPED] = TYPED_INSN;
-//        b[Opcodes.VRETURN] = TYPED_INSN;
-//        b[Opcodes.VGETFIELD] = TYPED_INSN;
 //        b[Opcodes.VLOAD] = VAR_INSN;
 //        b[Opcodes.VSTORE] = VAR_INSN;
+//        b[Opcodes.VALOAD] = TYPED_INSN;
+//        b[Opcodes.VASTORE] = TYPED_INSN;
+//        b[Opcodes.VNEW] = FIELDORMETH_INSN;
+//        b[Opcodes.VNEWARRAY] = TYPE_INSN;
+//        b[Opcodes.VGETFIELD] = FIELDORMETH_INSN;
+//        b[Opcodes.TYPED] = TYPED_INSN;
+//        b[Opcodes.INVOKEDIRECT] = FIELDORMETH_INSN;
 //
+//
+//        System.err.println("LENGTH" + b.length);
 //        for (i = 0; i < b.length; ++i) {
 //            System.err.print((char) ('A' + b[i]));
 //        }
 //        System.err.println();
+//    }
+
     }
 
     // ------------------------------------------------------------------------

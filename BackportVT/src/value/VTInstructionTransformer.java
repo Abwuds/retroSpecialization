@@ -41,33 +41,18 @@ public class VTInstructionTransformer extends MethodTransformer {
                     ((VarInsnNode) i1).setOpcode(Opcodes.ASTORE);
                     break;
                 case VNEW :
-//                    System.out.println( ((TypeInsnNode) i1).desc);
-                    if(isValue) {
-                        ((TypeInsnNode) i1).desc = className;
-                        Type[] methodArguments = Type.getMethodArguments(initDescriptor);
-                        AbstractInsnNode tmp = i1;
-                        for (int k = 0; k < methodArguments.length; k++) {
-                            tmp = getInsnNode(tmp, AbstractInsnNode::getPrevious);
-                        }
-                        insns.insert(getInsnNode(tmp, AbstractInsnNode::getPrevious), new TypeInsnNode(Opcodes.NEW, className));
-                        insns.insert(getInsnNode(tmp, AbstractInsnNode::getPrevious), new InsnNode(Opcodes.DUP));
-                        insns.insert(i1, new MethodInsnNode(Opcodes.INVOKESPECIAL, className, "<init>", initDescriptor, false));
-                        insns.remove(i1);
+                    String desc = (isValue)?initDescriptor:((MethodInsnNode) i1).desc;
+                    String targetClassName = (isValue)?className:getClassNameFromReturnTypeDescriptor(desc);
+                    String targetDescriptor = (isValue)?initDescriptor:(desc.substring(0, desc.indexOf(')')+1))+"V";
+                    Type[] methodArguments = Type.getMethodArguments(desc);
+                    AbstractInsnNode tmp = i1;
+                    for (int k = 0; k < methodArguments.length; k++) {
+                        tmp = getInsnNode(tmp, AbstractInsnNode::getPrevious);
                     }
-                    else {
-//                        String desc = ((TypeInsnNode) i1).desc.substring(((TypeInsnNode) i1).desc.indexOf('('));
-//                        System.out.println("DESC : " + desc);
-//                        Type[] methodArguments = Type.getMethodArguments(desc);
-//                        AbstractInsnNode tmp = i1;
-//                        for (int k = 0; k < methodArguments.length; k++) {
-//                            tmp = getInsnNode(tmp, AbstractInsnNode::getPrevious);
-//                        }
-//                        insns.insert(getInsnNode(tmp, AbstractInsnNode::getPrevious), new TypeInsnNode(Opcodes.NEW, className));
-//                        insns.insert(getInsnNode(tmp, AbstractInsnNode::getPrevious), new InsnNode(Opcodes.DUP));
-//                        insns.insert(i1, new MethodInsnNode(Opcodes.INVOKESPECIAL, className, "<init>", mn.desc, false));
-//                        insns.remove(i1);
-                    }
-
+                    insns.insert(getInsnNode(tmp, AbstractInsnNode::getPrevious), new TypeInsnNode(Opcodes.NEW, targetClassName));
+                    insns.insert(getInsnNode(tmp, AbstractInsnNode::getPrevious), new InsnNode(Opcodes.DUP));
+                    insns.insert(i1, new MethodInsnNode(Opcodes.INVOKESPECIAL, targetClassName, "<init>", targetDescriptor, false));
+                    insns.remove(i1);
                     break;
                 case VRETURN :
                     insns.insert(i1, new InsnNode(Opcodes.ARETURN));
@@ -111,5 +96,9 @@ public class VTInstructionTransformer extends MethodTransformer {
             }
         } while (insn != null);
         return insn;
+    }
+
+    private static String getClassNameFromReturnTypeDescriptor(String desc) {
+        return desc.substring(desc.indexOf(')')+2, desc.length()-1);
     }
 }
