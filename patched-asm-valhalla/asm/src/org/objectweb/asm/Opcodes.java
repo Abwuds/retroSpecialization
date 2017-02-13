@@ -382,6 +382,8 @@ public interface Opcodes {
     int VRETURN = 210;
     int VGETFIELD = 211;
     int TYPED = 212;
+    int INVOKEDIRECT = 213;
+
     //int VBOX = 216;
     //int VUNBOX = 217;
 }

@@ -1,9 +1,13 @@
 package value;
 
+import jdk.nashorn.internal.codegen.types.Type;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 import java.util.Iterator;
+import java.util.function.Function;
+
+import static org.objectweb.asm.Opcodes.*;
 
 /**
  * Created by Fabien GIACHERIO on 08/02/17.
@@ -12,8 +16,15 @@ import java.util.Iterator;
  */
 public class VTInstructionTransformer extends MethodTransformer {
 
-    public VTInstructionTransformer(MethodTransformer mt) {
+    private final String className;
+    private final String initDescriptor;
+    private final boolean isValue;
+
+    public VTInstructionTransformer(MethodTransformer mt, String name, String initDescriptor, boolean isValue) {
         super(mt);
+        this.className = name;
+        this.initDescriptor = initDescriptor;
+        this.isValue = isValue;
     }
 
     @Override
@@ -22,24 +33,83 @@ public class VTInstructionTransformer extends MethodTransformer {
         Iterator i = insns.iterator();
         while (i.hasNext()) {
             AbstractInsnNode i1 = (AbstractInsnNode) i.next();
-            if(isVLOAD0(i1)) {
-//                ((VarInsnNode) i1).setOpcode(Opcodes.ALOAD);
+            switch ((i1.getOpcode())) {
+                case VLOAD :
+                    ((VarInsnNode) i1).setOpcode(Opcodes.ALOAD);
+                    break;
+                case VSTORE :
+                    ((VarInsnNode) i1).setOpcode(Opcodes.ASTORE);
+                    break;
+                case VNEW :
+//                    System.out.println( ((TypeInsnNode) i1).desc);
+                    if(isValue) {
+                        ((TypeInsnNode) i1).desc = className;
+                        Type[] methodArguments = Type.getMethodArguments(initDescriptor);
+                        AbstractInsnNode tmp = i1;
+                        for (int k = 0; k < methodArguments.length; k++) {
+                            tmp = getInsnNode(tmp, AbstractInsnNode::getPrevious);
+                        }
+                        insns.insert(getInsnNode(tmp, AbstractInsnNode::getPrevious), new TypeInsnNode(Opcodes.NEW, className));
+                        insns.insert(getInsnNode(tmp, AbstractInsnNode::getPrevious), new InsnNode(Opcodes.DUP));
+                        insns.insert(i1, new MethodInsnNode(Opcodes.INVOKESPECIAL, className, "<init>", initDescriptor, false));
+                        insns.remove(i1);
+                    }
+                    else {
+//                        String desc = ((TypeInsnNode) i1).desc.substring(((TypeInsnNode) i1).desc.indexOf('('));
+//                        System.out.println("DESC : " + desc);
+//                        Type[] methodArguments = Type.getMethodArguments(desc);
+//                        AbstractInsnNode tmp = i1;
+//                        for (int k = 0; k < methodArguments.length; k++) {
+//                            tmp = getInsnNode(tmp, AbstractInsnNode::getPrevious);
+//                        }
+//                        insns.insert(getInsnNode(tmp, AbstractInsnNode::getPrevious), new TypeInsnNode(Opcodes.NEW, className));
+//                        insns.insert(getInsnNode(tmp, AbstractInsnNode::getPrevious), new InsnNode(Opcodes.DUP));
+//                        insns.insert(i1, new MethodInsnNode(Opcodes.INVOKESPECIAL, className, "<init>", mn.desc, false));
+//                        insns.remove(i1);
+                    }
+
+                    break;
+                case VRETURN :
+                    insns.insert(i1, new InsnNode(Opcodes.ARETURN));
+                    insns.remove(i1);
+                    break;
+                case VGETFIELD :
+                    ((FieldInsnNode) i1).setOpcode(Opcodes.GETFIELD);
+                    break;
+                case INVOKESTATIC :
+                    ((MethodInsnNode) i1).desc = VTClassVisitor.findAndTransformVtDesc(((MethodInsnNode) i1).desc );
+                    break;
+                case INVOKESPECIAL :
+                    ((MethodInsnNode) i1).desc = VTClassVisitor.findAndTransformVtDesc(((MethodInsnNode) i1).desc);
+                    if(((MethodInsnNode) i1).owner.equals("java/lang/__Value")){
+                        ((MethodInsnNode) i1).owner = "java/lang/Object";
+                    }
+                    break;
+                case INVOKEDIRECT :
+                    ((MethodInsnNode) i1).desc = VTClassVisitor.findAndTransformVtDesc(((MethodInsnNode) i1).desc);
+                    ((MethodInsnNode) i1).setOpcode(Opcodes.INVOKEVIRTUAL);
+                    break;
+                    //Appears when a object reference needs to initialize his VT attributes.
+                case PUTFIELD :
+                    ((FieldInsnNode)i1).desc = VTClassVisitor.transformVTDesc(((FieldInsnNode)i1).desc);
+                    break;
+                    //Appears when a object reference needs to get his VT attributes.
+                case GETFIELD :
+                    ((FieldInsnNode) i1).desc = VTClassVisitor.transformVTDesc(((FieldInsnNode) i1).desc);
+                default:
+                    break;
             }
         }
         super.transform(mn);
     }
 
-    private static AbstractInsnNode getNext(AbstractInsnNode insn) {
+    private static AbstractInsnNode getInsnNode(AbstractInsnNode insn, Function<AbstractInsnNode, AbstractInsnNode> fun) {
         do {
-            insn = insn.getNext();
+            insn = fun.apply(insn);
             if (insn != null && !(insn instanceof LineNumberNode)) {
                 break;
             }
         } while (insn != null);
         return insn;
-    }
-
-    private static boolean isVLOAD0(AbstractInsnNode i) {
-        return i.getOpcode() == Opcodes.VLOAD && ((VarInsnNode) i).var == 0;
     }
 }

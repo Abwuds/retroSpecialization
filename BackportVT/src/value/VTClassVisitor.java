@@ -15,6 +15,9 @@ import static org.objectweb.asm.Opcodes.*;
 public class VTClassVisitor extends ClassVisitor {
 
     public static final int API = ASM5;
+    private String className;
+    private String initDescriptor;
+
     //Used to adapt the ClassVisitor's behavior
     private boolean isValue;
 
@@ -25,6 +28,7 @@ public class VTClassVisitor extends ClassVisitor {
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         System.out.println(name + " : " + (access&(ACC_PRIVATE|ACC_PUBLIC|ACC_FINAL|ACC_PROTECTED|ACC_SUPER)) + " extends " + superName + " {");
+        this.className = name;
         this.isValue = (superName != null && superName.equals("java/lang/__Value"));
         if (isValue) {
             // Delete the ACC_VALUE flag. TODO Would be nice to have an opcode.
@@ -41,26 +45,32 @@ public class VTClassVisitor extends ClassVisitor {
 
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
         System.out.println("  Method : " + name + " : " + desc + "  -> " + name + " : " + findAndTransformVtDesc(desc)+ " " );
+        if(name.equals("<init>")) {
+            this.initDescriptor = desc;
+        }
+        else if(name.equals("<vminit>")) {
+           return null;
+        }
+
         MethodVisitor mv = cv.visitMethod(access,name,findAndTransformVtDesc(desc), signature, exceptions);
-        return new VTMethodAdapter(access,name,findAndTransformVtDesc(desc), signature, exceptions, mv);
+        return new VTMethodAdapter(access,name,findAndTransformVtDesc(desc), signature, exceptions, mv, this.className, this.initDescriptor, this.isValue);
     }
     public void visitEnd() {
         System.out.println("}");
     }
 
-    private String transformVTDesc(String desc) {
+    static String transformVTDesc(String desc) {
         if(desc.startsWith("Q")){
             return "L" + desc.substring(1, desc.length());
         }
         return desc;
     }
 
-    private String findAndTransformVtDesc(String desc){
+    static String findAndTransformVtDesc(String desc){
         int midIndex = desc.indexOf(')');
         //First char not needed
         char[] lDesc = desc.substring(1, midIndex).toCharArray();
         String rDesc = desc.substring(midIndex+1, desc.length());
-
         int off=0;
         while(off < lDesc.length) {
             while(off < lDesc.length && (lDesc[off]!='Q' && lDesc[off]!='L' && lDesc[off]!='T')) off++;
