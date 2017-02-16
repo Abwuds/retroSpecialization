@@ -1,10 +1,15 @@
 package value;
 
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 
-import static org.objectweb.asm.Opcodes.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.objectweb.asm.Opcodes.ACC_VALUE;
+import static org.objectweb.asm.Opcodes.ASM5;
 
 /**
  * Created by Fabien GIACHERIO on 07/02/17.
@@ -27,36 +32,50 @@ public class VTClassVisitor extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        System.out.println(name + " : " + (access&(ACC_PRIVATE|ACC_PUBLIC|ACC_FINAL|ACC_PROTECTED|ACC_SUPER)) + " extends " + superName + " {");
+        System.out.println(name + " : " + (access&~(ACC_VALUE)) + " extends " + superName + " {");
         this.className = name;
         this.isValue = (superName != null && superName.equals("java/lang/__Value"));
         if (isValue) {
-            // Delete the ACC_VALUE flag. TODO Would be nice to have an opcode.
-            super.visit(version, (access&(ACC_PRIVATE|ACC_PUBLIC|ACC_FINAL|ACC_PROTECTED|ACC_SUPER)), name, signature, "java/lang/Object", interfaces);
+            // Delete the ACC_VALUE flag.
+            super.visit(version, (access&~(ACC_VALUE)), name, signature, "java/lang/Object", interfaces);
         } else {
             super.visit(version, access, name, signature, superName, interfaces);
         }
     }
 
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
+        //TODO Check if our class is a value ?
         System.out.println("  Field : " + name + " : " + desc + "  -> " + name + " : " + transformVTDesc(desc)+ " " );
         return cv.visitField(access,name,transformVTDesc(desc),signature,value);
     }
 
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+        if(name.equals("<vminit>")) {
+            return null;
+        }
+
         System.out.println("  Method : " + name + " : " + desc + "  -> " + name + " : " + findAndTransformVtDesc(desc)+ " " );
         if(name.equals("<init>")) {
-            this.initDescriptor = desc;
-        }
-        else if(name.equals("<vminit>")) {
-           return null;
+            this.initDescriptor = findAndTransformVtDesc(desc);
         }
 
         MethodVisitor mv = cv.visitMethod(access,name,findAndTransformVtDesc(desc), signature, exceptions);
-        return new VTMethodAdapter(access,name,findAndTransformVtDesc(desc), signature, exceptions, mv, this.className, this.initDescriptor, this.isValue);
+        return new VTMethodAdapter(access,name,findAndTransformVtDesc(desc), signature, exceptions, mv, this.className, this.initDescriptor);
     }
+
     public void visitEnd() {
         System.out.println("}");
+    }
+
+
+
+    @Override
+    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+        if(desc.equals("Ljvm/internal/value/DeriveValueType;")) {
+            //TODO : Enregistrer la classe ?
+            return null;
+        }
+        return super.visitAnnotation(desc, visible);
     }
 
     static String transformVTDesc(String desc) {
@@ -78,10 +97,7 @@ public class VTClassVisitor extends ClassVisitor {
             while(off < lDesc.length && (lDesc[off]!=';')) off++;
             off++;
         }
-
         rDesc = transformVTDesc(rDesc);
-        String finalDesc = "("+String.valueOf(lDesc)+")"+rDesc;
-
-        return finalDesc;
+        return "("+String.valueOf(lDesc)+")"+rDesc;
     }
 }

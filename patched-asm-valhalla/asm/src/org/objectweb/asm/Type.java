@@ -112,6 +112,11 @@ public class Type {
     public static final int PARAMETERIZED_TYPE = 13;
 
     /**
+     * The sort of value type. See {@link #getSort getSort}.
+     */
+    public static final int VALUE_TYPE = 14;
+
+    /**
      * The <tt>void</tt> type.
      */
     public static final Type VOID_TYPE = new Type(VOID, null, ('V' << 24)
@@ -339,7 +344,7 @@ public class Type {
             char car = buf[off++];
             if (car == ')') {
                 break;
-            } else if (car == '$' || car == 'L' || car == 'T') {
+            } else if (car == '$' || car == 'L' || car == 'T' || car=='Q') {
                 while (buf[off++] != ';') {
                 }
                 ++size;
@@ -356,6 +361,7 @@ public class Type {
             switch (args[size].sort) {
                 case OBJECT:
                 case TYPE_VAR:
+                case VALUE_TYPE :
                 case PARAMETERIZED_TYPE:
                     tokenNb = 2;
                     break;
@@ -403,7 +409,7 @@ public class Type {
             char car = buf[off++];
             if (car == ')') {
                 return getType(buf, off);
-            } else if (car == '$' || car == 'L' || car == 'T') {
+            } else if (car == '$' || car == 'L' || car == 'T' || car == 'Q') {
                 while (buf[off++] != ';') {
                 }
             }
@@ -443,7 +449,7 @@ public class Type {
                 car = desc.charAt(c);
                 return n << 2
                         | (car == 'V' ? 0 : (car == 'D' || car == 'J' ? 2 : 1));
-            } else if (car == '$' || car == 'L' || car == 'T') {
+            } else if (car == '$' || car == 'L' || car == 'T' || car == 'Q') {
                 while (desc.charAt(c++) != ';') {
                 }
                 n += 1;
@@ -524,7 +530,12 @@ public class Type {
                 ++len;
             }
             return new Type(PARAMETERIZED_TYPE, buf, off + 1, len - 1);
-            // case '(':
+        case 'Q':
+            len = 1;
+            while (buf[off + len] != ';') {
+                ++len;
+            }
+            return new Type(VALUE_TYPE, buf, off + 1, len -1);
         default:
             return new Type(METHOD, buf, off, buf.length - off);
         }
@@ -604,6 +615,7 @@ public class Type {
             }
             return sb.toString();
         case OBJECT:
+        case VALUE_TYPE:
             return new String(buf, off, len).replace('/', '.');
         case TYPE_VAR:
             return new String(buf, off, len);
@@ -713,6 +725,10 @@ public class Type {
             buf.append((char) ((off & 0xFF000000) >>> 24));
         } else if (sort == OBJECT) {
             buf.append('L');
+            buf.append(this.buf, off, len);
+            buf.append(';');
+        } else if(sort == VALUE_TYPE) {
+            buf.append('Q');
             buf.append(this.buf, off, len);
             buf.append(';');
         } else if (sort == TYPE_VAR) {

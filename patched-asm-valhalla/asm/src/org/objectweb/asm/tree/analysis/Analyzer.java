@@ -251,7 +251,7 @@ public class Analyzer<V extends Value> implements Opcodes {
                             }
                         }
                     } else if (insnOpcode != ATHROW
-                            && (insnOpcode < IRETURN || insnOpcode > RETURN)) {
+                            && (insnOpcode < IRETURN || insnOpcode > RETURN) && insnOpcode!=VRETURN) {
                         if (subroutine != null) {
                             if (insnNode instanceof VarInsnNode) {
                                 int var = ((VarInsnNode) insnNode).var;
@@ -361,6 +361,7 @@ public class Analyzer<V extends Value> implements Opcodes {
             case DRETURN:
             case ARETURN:
             case RETURN:
+            case VRETURN:
             case ATHROW:
                 return;
             }

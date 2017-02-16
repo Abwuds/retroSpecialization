@@ -2,6 +2,7 @@ package value;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.tree.ClassNode;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -10,6 +11,8 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import static org.objectweb.asm.Opcodes.ASM5;
 
 /**
  * Created by Fabien GIACHERIO on 06/02/17.
@@ -63,9 +66,16 @@ public class Rewriter {
     private byte[] dump(Path path) {
         try {
             byte[] bytes = Files.readAllBytes(path);
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+            ClassNode cn = new ClassNode(ASM5);
             VTClassVisitor vtClassVisitor = new VTClassVisitor(cw);
-            new ClassReader(bytes).accept(vtClassVisitor, 0);
+            new ClassReader(bytes).accept(cn, 0);
+//            AddReferenceMethodTransformer addReferenceMethodTransformer = new AddReferenceMethodTransformer(null);
+//            addReferenceMethodTransformer.transform(cn);
+            cn.accept(vtClassVisitor);
+
+//
+
             // Returning the current class byte array.
             return cw.toByteArray();
         } catch (IOException e) {

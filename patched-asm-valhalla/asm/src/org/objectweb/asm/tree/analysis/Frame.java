@@ -274,6 +274,7 @@ public class Frame<V extends Value> {
         case Opcodes.FLOAD:
         case Opcodes.DLOAD:
         case Opcodes.ALOAD:
+        case Opcodes.VLOAD:
             push(interpreter.copyOperation(insn,
                     getLocal(((VarInsnNode) insn).var)));
             break;
@@ -282,6 +283,7 @@ public class Frame<V extends Value> {
         case Opcodes.FALOAD:
         case Opcodes.DALOAD:
         case Opcodes.AALOAD:
+        case Opcodes.VALOAD:
         case Opcodes.BALOAD:
         case Opcodes.CALOAD:
         case Opcodes.SALOAD:
@@ -294,6 +296,7 @@ public class Frame<V extends Value> {
         case Opcodes.FSTORE:
         case Opcodes.DSTORE:
         case Opcodes.ASTORE:
+        case Opcodes.VSTORE:
             value1 = interpreter.copyOperation(insn, pop());
             var = ((VarInsnNode) insn).var;
             setLocal(var, value1);
@@ -312,6 +315,7 @@ public class Frame<V extends Value> {
         case Opcodes.FASTORE:
         case Opcodes.DASTORE:
         case Opcodes.AASTORE:
+        case Opcodes.VASTORE:
         case Opcodes.BASTORE:
         case Opcodes.CASTORE:
         case Opcodes.SASTORE:
@@ -579,6 +583,7 @@ public class Frame<V extends Value> {
         case Opcodes.FRETURN:
         case Opcodes.DRETURN:
         case Opcodes.ARETURN:
+        case Opcodes.VRETURN:
             value1 = pop();
             interpreter.unaryOperation(insn, value1);
             interpreter.returnOperation(insn, value1, returnValue);
@@ -595,6 +600,7 @@ public class Frame<V extends Value> {
             interpreter.unaryOperation(insn, pop());
             break;
         case Opcodes.GETFIELD:
+        case Opcodes.VGETFIELD:
             push(interpreter.unaryOperation(insn, pop()));
             break;
         case Opcodes.PUTFIELD:
@@ -605,13 +611,15 @@ public class Frame<V extends Value> {
         case Opcodes.INVOKEVIRTUAL:
         case Opcodes.INVOKESPECIAL:
         case Opcodes.INVOKESTATIC:
+        case Opcodes.INVOKEDIRECT:
+        case Opcodes.VNEW:
         case Opcodes.INVOKEINTERFACE: {
             values = new ArrayList<V>();
             String desc = ((MethodInsnNode) insn).desc;
             for (int i = Type.getArgumentTypes(desc).length; i > 0; --i) {
                 values.add(0, pop());
             }
-            if (insn.getOpcode() != Opcodes.INVOKESTATIC) {
+            if ((insn.getOpcode() != Opcodes.INVOKESTATIC)&&(insn.getOpcode() != Opcodes.VNEW)) {
                 values.add(0, pop());
             }
             if (Type.getReturnType(desc) == Type.VOID_TYPE) {
@@ -671,7 +679,7 @@ public class Frame<V extends Value> {
 
     /**
      * Merges this frame with the given frame.
-     * 
+     *
      * @param frame
      *            a frame.
      * @param interpreter
