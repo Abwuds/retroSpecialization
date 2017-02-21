@@ -26,6 +26,7 @@ public class ReplaceGetAndPutFieldMethodTransformer extends MethodTransformer {
 
     @Override
     public void transform(MethodNode mn) {
+        //TODO Refactor
         AbstractInsnNode[] insns = mn.instructions.toArray();
         for (int i = 0; i < insns.length; ++i) {
             if (insns[i].getOpcode() == ALOAD) {

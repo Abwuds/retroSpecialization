@@ -644,9 +644,6 @@ final class Frame {
             t = desc.substring(index + 1, desc.length() - 1);
             return OBJECT | cw.addType(t);
             // case '[':
-        case 'Q':
-            t = desc.substring(index + 1, desc.length() - 1);
-            return Type.VALUE_TYPE | cw.addType(t);
         default:
             // extracts the dimensions and the element type
             int data;
@@ -927,7 +924,6 @@ final class Frame {
             }
             break;
         case Opcodes.ALOAD:
-        case Opcodes.VLOAD :
             push(get(arg));
             break;
         case Opcodes.IALOAD:
@@ -961,7 +957,6 @@ final class Frame {
         case Opcodes.ISTORE:
         case Opcodes.FSTORE:
         case Opcodes.ASTORE:
-        case Opcodes.VSTORE:
             t1 = pop();
             set(arg, t1);
             if (arg > 0) {
@@ -1012,7 +1007,6 @@ final class Frame {
         case Opcodes.IRETURN:
         case Opcodes.FRETURN:
         case Opcodes.ARETURN:
-        case Opcodes.VRETURN:
         case Opcodes.TABLESWITCH:
         case Opcodes.LOOKUPSWITCH:
         case Opcodes.ATHROW:
@@ -1190,7 +1184,6 @@ final class Frame {
             pop(item.strVal3);
             break;
         case Opcodes.GETFIELD:
-        case Opcodes.VGETFIELD:
             pop(1);
             push(cw, item.strVal3);
             break;
@@ -1202,7 +1195,6 @@ final class Frame {
         case Opcodes.INVOKESPECIAL:
         case Opcodes.INVOKESTATIC:
         case Opcodes.INVOKEINTERFACE:
-        case Opcodes.VNEW :
             pop(item.strVal3);
             if (opcode != Opcodes.INVOKESTATIC) {
                 t1 = pop();
