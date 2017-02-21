@@ -603,6 +603,11 @@ public class Frame<V extends Value> {
         case Opcodes.VGETFIELD:
             push(interpreter.unaryOperation(insn, pop()));
             break;
+        case Opcodes.VWITHFIELD:
+            value2 = pop();
+            value1 = pop();
+            push(interpreter.binaryOperation(insn, value1, value2));
+            break;
         case Opcodes.PUTFIELD:
             value2 = pop();
             value1 = pop();

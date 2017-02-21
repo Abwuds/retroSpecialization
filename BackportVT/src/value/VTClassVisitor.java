@@ -5,9 +5,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.objectweb.asm.Opcodes.ACC_VALUE;
 import static org.objectweb.asm.Opcodes.ASM5;
 
@@ -44,8 +41,6 @@ public class VTClassVisitor extends ClassVisitor {
     }
 
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
-        //TODO Check if our class is a value ?
-        System.out.println("  Field : " + name + " : " + desc + "  -> " + name + " : " + transformVTDesc(desc)+ " " );
         return cv.visitField(access,name,transformVTDesc(desc),signature,value);
     }
 
@@ -53,21 +48,14 @@ public class VTClassVisitor extends ClassVisitor {
         if(name.equals("<vminit>")) {
             return null;
         }
-
-        System.out.println("  Method : " + name + " : " + desc + "  -> " + name + " : " + findAndTransformVtDesc(desc)+ " " );
-        if(name.equals("<init>")) {
+        else if(name.equals("<init>")) {
             this.initDescriptor = findAndTransformVtDesc(desc);
         }
 
         MethodVisitor mv = cv.visitMethod(access,name,findAndTransformVtDesc(desc), signature, exceptions);
-        return new VTMethodAdapter(access,name,findAndTransformVtDesc(desc), signature, exceptions, mv, this.className, this.initDescriptor);
+        VTMethodAdapter vtMethodAdapter = new VTMethodAdapter(access, name, findAndTransformVtDesc(desc), signature, exceptions, mv, this.className, this.initDescriptor);
+        return  vtMethodAdapter;
     }
-
-    public void visitEnd() {
-        System.out.println("}");
-    }
-
-
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
