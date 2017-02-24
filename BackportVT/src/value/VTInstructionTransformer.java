@@ -41,22 +41,20 @@ public class VTInstructionTransformer extends MethodTransformer {
                         ((VarInsnNode) insns[i]).setOpcode(Opcodes.ASTORE);
                         break;
                     case VNEW:
-                        String desc = adapter.initDescriptor;
-                        String targetClassName = adapter.owner;
-                        String targetDescriptor = adapter.initDescriptor;
-                        Type[] methodArguments = Type.getArgumentTypes(desc);
+                        Type[] methodArguments = Type.getArgumentTypes(adapter.initDescriptor);
                         SourceValue sourceValue = frames[i].getStack(frames[i].getStackSize() - methodArguments.length);
                         sourceValue.insns.stream().forEach(c -> {
-                            mn.instructions.insert(c.getPrevious(), new TypeInsnNode(Opcodes.NEW, targetClassName));
+                            mn.instructions.insert(c.getPrevious(), new TypeInsnNode(Opcodes.NEW, adapter.owner));
                             mn.instructions.insert(c.getPrevious(), new InsnNode(Opcodes.DUP));
                         });
-                        mn.instructions.set(insns[i], new MethodInsnNode(Opcodes.INVOKESPECIAL, targetClassName, "<init>", targetDescriptor, false));
+                        mn.instructions.set(insns[i], new MethodInsnNode(Opcodes.INVOKESPECIAL, adapter.owner, "<init>", adapter.initDescriptor, false));
                         break;
                     case VRETURN:
                         mn.instructions.set(insns[i], new InsnNode(Opcodes.ARETURN));
                         break;
                     case VGETFIELD:
                         ((FieldInsnNode) insns[i]).setOpcode(Opcodes.GETFIELD);
+                        ((FieldInsnNode) insns[i]).desc = VTClassVisitor.transformVTDesc(((FieldInsnNode) insns[i]).desc);
                         break;
                     case INVOKESTATIC:
                         ((MethodInsnNode) insns[i]).desc = VTClassVisitor.findAndTransformVtDesc(((MethodInsnNode) insns[i]).desc);

@@ -5,6 +5,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_VALUE;
 import static org.objectweb.asm.Opcodes.ASM5;
 
@@ -29,7 +30,6 @@ public class VTClassVisitor extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        System.out.println(name + " : " + (access&~(ACC_VALUE)) + " extends " + superName + " {");
         this.className = name;
         this.isValue = (superName != null && superName.equals("java/lang/__Value"));
         if (isValue) {
