@@ -55,20 +55,15 @@ public class Rewriter {
             throw new IllegalStateException("Can not find the folder : " + directory);
         }
         //Visit and mark values
-        List<String> vts = new ArrayList<>();
-        for(File f : files) {
-            ClassReader classReader = new ClassReader(Files.readAllBytes(f.toPath()));
-            if((classReader.getAccess()&ACC_VALUE)!=0) vts.add(classReader.getClassName());
-        }
         for (File f : files) {
-            visitClazz(f.toPath(), vts);
+            visitClazz(f.toPath());
         }
         for (File f : files) {
             compileClazz(f.toPath());
         }
     }
 
-    private void visitClazz(Path path, List<String> vts) {
+    private void visitClazz(Path path) {
         System.out.println("Visiting class : " + path);
         try {
             byte[] bytes = Files.readAllBytes(path);
@@ -77,7 +72,7 @@ public class Rewriter {
 
             classReader.accept(cn, 0);
             //Used to find values types and registers them into a list
-            FindVTClassTransformer findVTClassTransformer = new FindVTClassTransformer(null, vts);
+            FindVTClassTransformer findVTClassTransformer = new FindVTClassTransformer(null);
             findVTClassTransformer.transform(cn);
         } catch (IOException e) {
             e.printStackTrace();
@@ -102,19 +97,8 @@ public class Rewriter {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
             ClassNode cn = new ClassNode(ASM5);
             new ClassReader(bytes).accept(cn, EXPAND_FRAMES);
-            //Used to decompose values
-//            AddLocalsClassVisitor addLocalsClassVisitor = new AddLocalsClassVisitor(cw);
             VTClassVisitor vtClassVisitor = new VTClassVisitor(cw);
             cn.accept(vtClassVisitor);
-
-
-            cn = new ClassNode(ASM5);
-            new ClassReader(cw.toByteArray()).accept(cn, EXPAND_FRAMES);
-            cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-            AddLocalsClassVisitor addLocalsClassVisitor = new AddLocalsClassVisitor(cw);
-            cn.accept(addLocalsClassVisitor);
-
-            // Returning the current class byte array.
             return cw.toByteArray();
         } catch (IOException e) {
             e.printStackTrace();

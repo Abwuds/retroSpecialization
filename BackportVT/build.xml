@@ -64,7 +64,7 @@
 		<antcall target="compile-asm-if-needed"/>
 
 		<mkdir dir="${classes.dir}"/>
-		<javac srcdir="src" destdir="${classes.dir}" classpathref="classpath">
+		<javac srcdir="src" destdir="${classes.dir}" classpathref="classpath" debug="true">
 			<compilerarg value="-XDignore.symbol.file"/>
 		</javac>		
 	</target>

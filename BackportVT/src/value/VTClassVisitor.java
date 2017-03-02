@@ -4,8 +4,8 @@ import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.commons.LocalVariablesSorter;
 
-import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_VALUE;
 import static org.objectweb.asm.Opcodes.ASM5;
 
@@ -18,7 +18,7 @@ import static org.objectweb.asm.Opcodes.ASM5;
 public class VTClassVisitor extends ClassVisitor {
 
     public static final int API = ASM5;
-    private String className;
+    private String owner;
     private String initDescriptor;
 
     //Used to adapt the ClassVisitor's behavior
@@ -30,7 +30,7 @@ public class VTClassVisitor extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        this.className = name;
+        this.owner = name;
         this.isValue = (superName != null && superName.equals("java/lang/__Value"));
         if (isValue) {
             // Delete the ACC_VALUE flag.
@@ -53,8 +53,10 @@ public class VTClassVisitor extends ClassVisitor {
         }
 
         MethodVisitor mv = cv.visitMethod(access,name,findAndTransformVtDesc(desc), signature, exceptions);
-        VTMethodAdapter vtMethodAdapter = new VTMethodAdapter(access, name, findAndTransformVtDesc(desc), signature, exceptions, mv, this.className, this.initDescriptor);
-        return  vtMethodAdapter;
+        VTMethodAdapter vtMethodAdapter = new VTMethodAdapter(access, name, findAndTransformVtDesc(desc), signature, exceptions, mv, this.owner, this.initDescriptor);
+//        vtMethodAdapter.aa = new AnalyzerAdapter(owner, access, name, desc, vtMethodAdapter);
+        vtMethodAdapter.lvs = new LocalVariablesSorter(access, desc, vtMethodAdapter);
+        return  vtMethodAdapter.lvs;
     }
 
     @Override

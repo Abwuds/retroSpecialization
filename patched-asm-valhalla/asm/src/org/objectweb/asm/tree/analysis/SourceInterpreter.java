@@ -109,6 +109,7 @@ public class SourceInterpreter extends Interpreter<SourceValue> implements
         case D2L:
             size = 2;
             break;
+        case VGETFIELD:
         case GETFIELD:
             size = Type.getType(((FieldInsnNode) insn).desc).getSize();
             break;

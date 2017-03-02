@@ -12,11 +12,9 @@ import java.util.Optional;
  */
 public class FindVTClassTransformer extends ClassTransformer {
 
-    private List<String> vts;
 
-    public FindVTClassTransformer(ClassTransformer ct, List<String> vts) {
+    public FindVTClassTransformer(ClassTransformer ct) {
         super(ct);
-        this.vts = vts;
     }
 
     @Override
