@@ -4,6 +4,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.LocalVariablesSorter;
+import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.*;
 import org.objectweb.asm.tree.analysis.*;
 
@@ -66,13 +67,12 @@ public class VTMethodVisitor extends MethodTransformer {
 
     private void populateRegisters(MethodNode mn) {
         VTClass vt = Rewriter.vtsLayout.get(owner);
-        int k = 0;
         if(!mn.name.equals("<init>")) {
             //Decomposing the value into his own methods
             if((mn.access&ACC_STATIC)==0 && vt !=null){
-                addLocalsForVT(writer, vt, k);
-                k=1;
+                addLocalsForVT(writer, vt, 0);
             }
+            int k =((mn.access&ACC_STATIC)==0)?1:0;
             Type[] methodArguments = Type.getArgumentTypes(mn.desc);
             for (Type t : methodArguments) {
                 vt = Rewriter.vtsLayout.get(t.getClassName());
@@ -123,6 +123,14 @@ public class VTMethodVisitor extends MethodTransformer {
                 fieldInsnNode = (FieldInsnNode) insn;
                 mv.visitFieldInsn(GETFIELD, fieldInsnNode.owner, fieldInsnNode.name, VTClassVisitor.transformVTDesc(fieldInsnNode.desc));
                 break;
+            case GETSTATIC:
+                fieldInsnNode = (FieldInsnNode) insn;
+                mv.visitFieldInsn(GETSTATIC, fieldInsnNode.owner, fieldInsnNode.name, VTClassVisitor.transformVTDesc(fieldInsnNode.desc));
+                break;
+            case PUTSTATIC:
+                fieldInsnNode = (FieldInsnNode) insn;
+                mv.visitFieldInsn(PUTSTATIC, fieldInsnNode.owner, fieldInsnNode.name, VTClassVisitor.transformVTDesc(fieldInsnNode.desc));
+                break;
             case VASTORE:
                 mv.visitInsn(AASTORE);
                 break;
@@ -154,6 +162,8 @@ public class VTMethodVisitor extends MethodTransformer {
             switch (insns[i].getOpcode()) {
                 case VNEW:
                     SourceValue sourceValue = frames[i].getStack(0);
+                    MethodInsnNode methodInsnNode = (MethodInsnNode) insns[i];
+                    VTClass vtTargetInsn = Rewriter.vtsLayout.get(Type.getReturnType(methodInsnNode.desc).getClassName());
                     if(sourceValue!=null) {
                         for(AbstractInsnNode k : sourceValue.insns) {
                             VTConsumer consumer = transformations.get(k);
@@ -166,13 +176,13 @@ public class VTMethodVisitor extends MethodTransformer {
                             });
                         }
                         transformations.put(insns[i], (mn1, mv, insn, registers) -> {
-                            mv.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, "<init>", initDescriptor, false);
+                            mv.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, "<init>", vtTargetInsn.initDesc, false);
                         });
                     } else {
                         transformations.put(insns[i], (mn1, mv, insn, registers1) -> {
                             mv.visitTypeInsn(NEW, owner);
                             mv.visitInsn(DUP);
-                            mv.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, "<init>", initDescriptor, false);
+                            mv.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, "<init>", "()V", false);
                         });
                     }
                     break;
@@ -193,6 +203,7 @@ public class VTMethodVisitor extends MethodTransformer {
                                         switch (VTClassVisitor.transformVTDesc(tmp.desc)) {
                                             case "B":
                                             case "C":
+                                            case "Z":
                                             case "S":
                                             case "I":
                                                 targetOpcode = Opcodes.ILOAD;
@@ -240,16 +251,21 @@ public class VTMethodVisitor extends MethodTransformer {
                     break;
                 case INVOKEDIRECT:
                 case INVOKEVIRTUAL:
-                    MethodInsnNode methodInsnNode = (MethodInsnNode) insns[i];
+                    methodInsnNode = (MethodInsnNode) insns[i];
                     List<Type> targetMethodArgs = Arrays.stream(Type.getArgumentTypes(methodInsnNode.desc)).collect(Collectors.toList());
                     // InvokeVirtual
-                    VTClass vtOwner = Rewriter.vtsLayout.get(methodInsnNode.owner);
+                    final VTClass vtOwner = Rewriter.vtsLayout.get(methodInsnNode.owner);
                     if(vtOwner != null){
                         sourceValue = frames[i].getStack(0);
                         for(AbstractInsnNode c : sourceValue.insns) {
                             if(c instanceof VarInsnNode) {
+                                VTConsumer vtConsumer = transformations.get(c);
                                 transformations.put(c, (mn1, mv, insn, registers) -> {
-                                    recomposeObject(mv, vtOwner,((VarInsnNode) c).var);
+                                    if(isDecomposed(vtOwner, ((VarInsnNode) c).var)) {
+                                        recomposeObject(mv, vtOwner, ((VarInsnNode) c).var);
+                                    } else {
+                                        vtConsumer.consume(mn1, mv, insn, registers);
+                                    }
                                 });
                             } else {
                                 //TODO Do something
@@ -263,8 +279,14 @@ public class VTMethodVisitor extends MethodTransformer {
                             SourceValue sc = frames[i].getStack(targetMethodArgs.indexOf(t)+1);
                             sc.insns.forEach(c -> {
                                 if(c instanceof VarInsnNode) {
+                                    VTConsumer vtConsumer = transformations.get(c);
                                     transformations.put(c, (mn1, mv, insn, registers1) -> {
-                                        recomposeObject(mv, vtTarget, ((VarInsnNode) c).var);
+                                        if(isDecomposed(vtTarget, ((VarInsnNode) c).var)){
+                                            recomposeObject(mv, vtTarget, ((VarInsnNode) c).var);
+                                        }
+                                        else {
+                                            vtConsumer.consume(mn1, mv, insn, registers1);
+                                        }
                                     });
                                 } else {
                                     //TODO Do something
@@ -283,8 +305,14 @@ public class VTMethodVisitor extends MethodTransformer {
                             SourceValue sc = frames[i].getStack(targetMethodArgs.indexOf(t));
                             sc.insns.forEach(c -> {
                                 if(c instanceof VarInsnNode) {
+                                    VTConsumer vtConsumer = transformations.get(c);
                                     transformations.put(c, (mn1, mv, insn, registers1) -> {
-                                        recomposeObject(mv, vtTarget, ((VarInsnNode) c).var);
+                                        int var = ((VarInsnNode) c).var;
+                                        if(isDecomposed(vtTarget, var)) {
+                                            recomposeObject(mv, vtTarget, var);
+                                        } else {
+                                            vtConsumer.consume(mn1, mv, insn, registers1);
+                                        }
                                     });
                                 } else {
                                     //TODO Do something
@@ -312,6 +340,7 @@ public class VTMethodVisitor extends MethodTransformer {
                        switch (VTClassVisitor.transformVTDesc(insn.desc)) {
                            case "B":
                            case "C":
+                           case "Z":
                            case "S":
                            case "I":
                                mv.visitVarInsn(ISTORE, registers1.get(vtTarget.name+ insn.name+ finalIndex));
@@ -333,6 +362,16 @@ public class VTMethodVisitor extends MethodTransformer {
                        recomposeObject(mv, vtTarget, finalIndex);
                     });
                     break;
+                case VDEFAULT :
+                    //TODO Create default constructor if it doesn't exists
+                    TypeInsnNode typeInsnNode = (TypeInsnNode) insns[i];
+                    VTClass vtClass = Rewriter.vtsLayout.get(typeInsnNode.desc);
+                    transformations.put(insns[i], (mn1, mv, insn1, registers1) -> {
+                       mv.visitTypeInsn(NEW, typeInsnNode.desc);
+                       mv.visitInsn(DUP);
+                       mv.visitMethodInsn(Opcodes.INVOKESPECIAL, vtClass.name, "<init>", "()V", false);
+                    });
+                    break;
                 default :
                     break;
             }
@@ -347,14 +386,17 @@ public class VTMethodVisitor extends MethodTransformer {
         for(int i=0; i< insns.length; i++) {
             if(insns[i].getOpcode() == VSTORE) {
                 VarInsnNode varInsnNode = (VarInsnNode) insns[i];
-                BasicValue stackValue = frames2[i].getStack(0);
+                BasicValue stackValue = frames2[i].getStack(frames2[i].getStackSize()-1);
+                final int k = i;
                 transformations.put(insns[i], ((mn1, mv, insn, registers1) -> {
                     VTClass vt = Rewriter.vtsLayout.get(stackValue.getType().getClassName());
                     mv.visitVarInsn(ASTORE, ((VarInsnNode) insn).var);
-                    if (registers1.get(vt.name + vt.fields.get(0).name + varInsnNode.var) == null) {
-                        addLocalsForVT(mv, vt, varInsnNode.var);
-                    } else {
-                        decomposeObject(mv, vt, varInsnNode.var);
+                    if(vt != null) {
+                        if (!isDecomposed(vt, varInsnNode.var)) {
+                            addLocalsForVT(mv, vt, varInsnNode.var);
+                        } else {
+                            decomposeObject(mv, vt, varInsnNode.var);
+                        }
                     }
                 }));
             }
@@ -370,6 +412,7 @@ public class VTMethodVisitor extends MethodTransformer {
                 case "B":
                 case "C":
                 case "S":
+                case "Z":
                 case "I":
                     mv.visitVarInsn(Opcodes.ISTORE, registers.get(vt.name+fn.name+String.valueOf(index)));
                     break;
@@ -400,6 +443,7 @@ public class VTMethodVisitor extends MethodTransformer {
                 case "C":
                 case "S":
                 case "I":
+                case "Z":
                     mv.visitVarInsn(ILOAD,registers.get(vt.name + fn.name + String.valueOf(index)));
                     break;
                 case "J":
@@ -432,6 +476,7 @@ public class VTMethodVisitor extends MethodTransformer {
                 case "C":
                 case "S":
                 case "I":
+                case "Z":
                     mv.visitVarInsn(ISTORE, indexNewLocal);
                     break;
                 case "J":
@@ -452,6 +497,11 @@ public class VTMethodVisitor extends MethodTransformer {
             }
         });
         mv.visitInsn(POP);
+    }
+
+    private boolean isDecomposed(VTClass vt, int index) {
+        FieldNode fieldNode = vt.fields.get(0);
+        return fieldNode==null?false:(registers.get(vt.name+fieldNode.name+String.valueOf(index))!=null);
     }
 }
 

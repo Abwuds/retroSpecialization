@@ -3,6 +3,7 @@ package value;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import org.objectweb.asm.tree.analysis.BasicValue;
@@ -22,7 +23,22 @@ public class VTInterpreter extends BasicInterpreter {
         if(type.getSort()==Type.VALUE_TYPE) {
             return new BasicValue(type);
         }
+        if(type.getSort() == Type.ARRAY){
+            VTClass vtClass = Rewriter.vtsLayout.get(type.getClassName().substring(0, type.getClassName().length() - 2));
+            if(vtClass !=null) {
+                Type type1 = Type.getType("Q" + vtClass.name + ";");
+                return new BasicValue(type1);
+            }
+        }
         return super.newValue(type);
+    }
+
+    @Override
+    public BasicValue newOperation(AbstractInsnNode insn) throws AnalyzerException {
+        if(insn.getOpcode() == VDEFAULT) {
+            return newValue(Type.getObjectType(((TypeInsnNode) insn).desc));
+        }
+        return super.newOperation(insn);
     }
 
     @Override
@@ -47,7 +63,7 @@ public class VTInterpreter extends BasicInterpreter {
     public BasicValue binaryOperation(AbstractInsnNode insn, BasicValue value1, BasicValue value2) throws AnalyzerException {
         switch (insn.getOpcode()) {
             case VALOAD :
-                return BasicValue.REFERENCE_VALUE;
+                return value1;
             case VWITHFIELD :
                 return newValue(Type.getType("Q".concat(((FieldInsnNode) insn).owner).concat(";")));
         }

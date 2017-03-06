@@ -6,8 +6,7 @@ import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 
-import static org.objectweb.asm.Opcodes.ACC_VALUE;
-import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.*;
 
 /**
  * Created by Fabien GIACHERIO on 07/02/17.
@@ -45,14 +44,16 @@ public class VTClassVisitor extends ClassVisitor {
     }
 
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+        MethodVisitor mv = null;
         if(name.equals("<vminit>")) {
             return null;
         }
         else if(name.equals("<init>")) {
             this.initDescriptor = findAndTransformVtDesc(desc);
+            mv = cv.visitMethod((access&~(ACC_PRIVATE))|ACC_PUBLIC,name,findAndTransformVtDesc(desc), signature, exceptions);
+        } else {
+            mv = cv.visitMethod(access,name,findAndTransformVtDesc(desc), signature, exceptions);
         }
-
-        MethodVisitor mv = cv.visitMethod(access,name,findAndTransformVtDesc(desc), signature, exceptions);
         VTMethodAdapter vtMethodAdapter = new VTMethodAdapter(access, name, findAndTransformVtDesc(desc), signature, exceptions, mv, this.owner, this.initDescriptor);
 //        vtMethodAdapter.aa = new AnalyzerAdapter(owner, access, name, desc, vtMethodAdapter);
         vtMethodAdapter.lvs = new LocalVariablesSorter(access, desc, vtMethodAdapter);

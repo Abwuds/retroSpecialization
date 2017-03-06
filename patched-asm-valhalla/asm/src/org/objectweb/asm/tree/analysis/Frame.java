@@ -647,6 +647,7 @@ public class Frame<V extends Value> {
             }
             break;
         }
+        case Opcodes.VDEFAULT:
         case Opcodes.NEW:
             push(interpreter.newOperation(insn));
             break;
