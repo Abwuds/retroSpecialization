@@ -4,7 +4,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.LocalVariablesSorter;
-import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.*;
 import org.objectweb.asm.tree.analysis.*;
 
@@ -27,17 +26,15 @@ public class VTMethodVisitor extends MethodTransformer {
     private final Map<AbstractInsnNode, VTConsumer> transformations = new HashMap<>();
     private LocalVariablesSorter lvs;
     private MethodVisitor writer;
-    private String initDescriptor;
 
     private Map<String,Integer> registers = new HashMap<>();
     private String owner;
 
-    public VTMethodVisitor(MethodTransformer mt, LocalVariablesSorter lvs, MethodVisitor writer, String owner, String initDescriptor) {
+    public VTMethodVisitor(MethodTransformer mt, LocalVariablesSorter lvs, MethodVisitor writer, String owner) {
         super(mt);
         this.lvs = lvs;
         this.writer = writer;
         this.owner = owner;
-        this.initDescriptor = initDescriptor;
     }
 
     @Override
@@ -176,13 +173,17 @@ public class VTMethodVisitor extends MethodTransformer {
                             });
                         }
                         transformations.put(insns[i], (mn1, mv, insn, registers) -> {
+                            //Add a default value for the extra boolean parameter of the constructor
+                            mv.visitInsn(ICONST_0);
                             mv.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, "<init>", vtTargetInsn.initDesc, false);
                         });
                     } else {
                         transformations.put(insns[i], (mn1, mv, insn, registers1) -> {
                             mv.visitTypeInsn(NEW, owner);
                             mv.visitInsn(DUP);
-                            mv.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, "<init>", "()V", false);
+                            //Add a default value for the extra boolean parameter of the constructor
+                            mv.visitInsn(ICONST_0);
+                            mv.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, "<init>", vtTargetInsn.initDesc, false);
                         });
                     }
                     break;
@@ -363,7 +364,6 @@ public class VTMethodVisitor extends MethodTransformer {
                     });
                     break;
                 case VDEFAULT :
-                    //TODO Create default constructor if it doesn't exists
                     TypeInsnNode typeInsnNode = (TypeInsnNode) insns[i];
                     VTClass vtClass = Rewriter.vtsLayout.get(typeInsnNode.desc);
                     transformations.put(insns[i], (mn1, mv, insn1, registers1) -> {
@@ -460,6 +460,8 @@ public class VTMethodVisitor extends MethodTransformer {
                     break;
             }
         }
+        //Add a default value for the extra boolean parameter of the constructor
+        mv.visitInsn(ICONST_0);
         mv.visitMethodInsn(Opcodes.INVOKESPECIAL, vt.name, "<init>", vt.initDesc, false);
     }
 
@@ -500,8 +502,7 @@ public class VTMethodVisitor extends MethodTransformer {
     }
 
     private boolean isDecomposed(VTClass vt, int index) {
-        FieldNode fieldNode = vt.fields.get(0);
-        return fieldNode==null?false:(registers.get(vt.name+fieldNode.name+String.valueOf(index))!=null);
+        return vt.fields.isEmpty()?false:(registers.get(vt.name+vt.fields.get(0).name+String.valueOf(index))!=null);
     }
 }
 

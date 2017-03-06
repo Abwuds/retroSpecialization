@@ -1,10 +1,8 @@
 package value;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.*;
 import org.objectweb.asm.commons.LocalVariablesSorter;
+import org.objectweb.asm.tree.FieldNode;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -18,7 +16,6 @@ public class VTClassVisitor extends ClassVisitor {
 
     public static final int API = ASM5;
     private String owner;
-    private String initDescriptor;
 
     //Used to adapt the ClassVisitor's behavior
     private boolean isValue;
@@ -44,20 +41,55 @@ public class VTClassVisitor extends ClassVisitor {
     }
 
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-        MethodVisitor mv = null;
+        MethodVisitor mv;
         if(name.equals("<vminit>")) {
+            addValueConstructor();
             return null;
         }
         else if(name.equals("<init>")) {
-            this.initDescriptor = findAndTransformVtDesc(desc);
             mv = cv.visitMethod((access&~(ACC_PRIVATE))|ACC_PUBLIC,name,findAndTransformVtDesc(desc), signature, exceptions);
         } else {
             mv = cv.visitMethod(access,name,findAndTransformVtDesc(desc), signature, exceptions);
         }
-        VTMethodAdapter vtMethodAdapter = new VTMethodAdapter(access, name, findAndTransformVtDesc(desc), signature, exceptions, mv, this.owner, this.initDescriptor);
-//        vtMethodAdapter.aa = new AnalyzerAdapter(owner, access, name, desc, vtMethodAdapter);
+        VTMethodAdapter vtMethodAdapter = new VTMethodAdapter(access, name, findAndTransformVtDesc(desc), signature, exceptions, mv, this.owner);
         vtMethodAdapter.lvs = new LocalVariablesSorter(access, desc, vtMethodAdapter);
         return  vtMethodAdapter.lvs;
+    }
+
+    private void addValueConstructor() {
+        VTClass vtClass = Rewriter.vtsLayout.get(owner);
+        MethodVisitor mv = cv.visitMethod(ACC_PUBLIC, "<init>", vtClass.initDesc, null, null);
+        mv.visitVarInsn(ALOAD, 0);
+        mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+        int size = 1;
+        for(FieldNode fn : vtClass.fields) {
+            mv.visitVarInsn(ALOAD, 0);
+            switch (fn.desc) {
+                case "B":
+                case "C":
+                case "S":
+                case "Z":
+                case "I":
+                    mv.visitVarInsn(ILOAD, size);
+                    break;
+                case "J":
+                    mv.visitVarInsn(LLOAD, size);
+                    break;
+                case "F":
+                    mv.visitVarInsn(FLOAD, size);
+                    break;
+                case "D":
+                    mv.visitVarInsn(DLOAD, size);
+                    break;
+                default:
+                    mv.visitVarInsn(ALOAD, size);
+                    break;
+            }
+            mv.visitFieldInsn(PUTFIELD, vtClass.name, fn.name, transformVTDesc(fn.desc));
+            size += Type.getType(fn.desc).getSize();
+        }
+        mv.visitInsn(RETURN);
+        mv.visitMaxs(0,0);
     }
 
     @Override
