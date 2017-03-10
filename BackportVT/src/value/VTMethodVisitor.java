@@ -174,7 +174,7 @@ public class VTMethodVisitor extends MethodTransformer {
                         }
                         transformations.put(insns[i], (mn1, mv, insn, registers) -> {
                             //Add a default value for the extra boolean parameter of the constructor
-                            mv.visitInsn(ICONST_0);
+                            mv.visitInsn(ACONST_NULL);
                             mv.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, "<init>", vtTargetInsn.initDesc, false);
                         });
                     } else {
@@ -182,7 +182,7 @@ public class VTMethodVisitor extends MethodTransformer {
                             mv.visitTypeInsn(NEW, owner);
                             mv.visitInsn(DUP);
                             //Add a default value for the extra boolean parameter of the constructor
-                            mv.visitInsn(ICONST_0);
+                            mv.visitInsn(ACONST_NULL);
                             mv.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, "<init>", vtTargetInsn.initDesc, false);
                         });
                     }
@@ -461,7 +461,7 @@ public class VTMethodVisitor extends MethodTransformer {
             }
         }
         //Add a default value for the extra boolean parameter of the constructor
-        mv.visitInsn(ICONST_0);
+        mv.visitInsn(Opcodes.ACONST_NULL);
         mv.visitMethodInsn(Opcodes.INVOKESPECIAL, vt.name, "<init>", vt.initDesc, false);
     }
 

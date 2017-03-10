@@ -29,7 +29,7 @@ public class FindVTClassTransformer extends ClassTransformer {
             List<FieldNode> fieldsWithoutStatic = cn.fields.stream().filter(fn -> ((fn.access & ACC_STATIC) == 0)).collect(Collectors.toList());
             String tmp = vmInitDesc.get();
             //Adding a boolean into the vminit's constructor and removing the return type
-            String newInitDescriptor = VTClassVisitor.findAndTransformVtDesc(tmp.substring(0, tmp.indexOf(')')).concat("Z)V"));
+            String newInitDescriptor = VTClassVisitor.findAndTransformVtDesc(tmp.substring(0, tmp.indexOf(')')).concat("Ljava/lang/Class;)V"));
             Rewriter.vtsLayout.put(cn.name, new VTClass(cn.name, newInitDescriptor, fieldsWithoutStatic));
         }
         super.transform(cn);
